@@ -1,14 +1,15 @@
 /* Libraries */
 
 #include <stdlib.h>
+#include <string.h>
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
 
 /* Definitions */
 
-#define inputs 784 // the inputs available to make a prediction
-#define outputs 10 // the outputs available as a prediction
+#define inputs (28 * 28) // the inputs available to make a prediction
+#define outputs 10       // the outputs available as a prediction
 
 #define total_weights (inputs * layer_size + layers * (layer_size * layer_size) + layer_size * outputs)
 #define total_biases (layer_size + layers * layer_size + outputs)
@@ -64,76 +65,143 @@ typedef struct
     neuron_neuron array_outputs[outputs];       // output neurons
 
     /* Information */
-    float score;
+    float cost;
+
+    int prediction;
     int label;
 
 } Neural_Network;
 
 /* Function Declarations */
 
-float sigmoid(float x);
-
 float randomizedFloat(float minimum, float maximum);
 
-void randomize(Neural_Network *net);
+float sigmoid(float x);
+float sigmoidDerivative(float x);
 
 void save(Neural_Network *net, const char *filename);
 void load(Neural_Network *net, const char *filename);
 
+void randomize(Neural_Network *net);
+
 void setActivation(Neural_Network *net, const char *filename, const char *label, int i);
 void showInputs(Neural_Network *net);
+void showLabel(Neural_Network *net);
 
 void calculateSum(Neural_Network *net);
 
-void showPrediction(Neural_Network *net);
 void showOutputs(Neural_Network *net);
-void showLabel(Neural_Network *net);
 
-void calculateScore(Neural_Network *net);
-void showScore(Neural_Network *net);
+void calculatePrediction(Neural_Network *net);
+void showPrediction(Neural_Network *net);
+
+void calculateCost(Neural_Network *net);
+void showCost(Neural_Network *net);
 
 void backpropagate(Neural_Network *net);
+
+void train(Neural_Network *net);
+
+void getFilename(char *filename, int i, int f);
 
 int main(int argc, char const *argv[])
 {
     // Create the Neural Network
     Neural_Network smarty_pants;
 
-    // Randomize Neurons
-    randomize(&smarty_pants);
+    if (argc == 1)
+    {
+        // Randomize Neurons
+        randomize(&smarty_pants);
 
-    // Save Network
-    save(&smarty_pants, "smarty_pants.bin");
+        // Train network
+        printf("Learning from 60000 images\n");
+        train(&smarty_pants);
 
-    // Load Network
-    load(&smarty_pants, "smarty_pants.bin");
+        // Save Network
+        printf("Saving network to smarty_pants.bin\n");
+        save(&smarty_pants, "smarty_pants.bin");
+    }
 
-    // Set Activation of input neurons
-    setActivation(&smarty_pants, "data/mnist-train-images/txt/00001.tif.txt", "data/mnist-train-labels.txt", 1);
+    if (argc == 2)
+    {
+        // Load Network
+        load(&smarty_pants, argv[1]);
 
-    // Show inputs
-    showInputs(&smarty_pants);
+        char filename[41];
+        int correct = 0;
 
-    // Calculate activations
-    calculateSum(&smarty_pants);
+        // Test on all test images
+        printf("Testing on 10000 images\n");
+        for (int i = 1; i <= 10000; i++)
+        {
+            // Get filename for image
+            getFilename(filename, i, 1);
 
-    // Show outputs
-    showOutputs(&smarty_pants);
+            // Set Activation
+            setActivation(&smarty_pants, filename, "data/mnist-test-labels.txt", i);
 
-    // Show correct label
-    showLabel(&smarty_pants);
+            // Calculate activations
+            calculateSum(&smarty_pants);
 
-    // Show prediction
-    showPrediction(&smarty_pants);
+            // Calculate prediction
+            calculatePrediction(&smarty_pants);
 
-    // Calculate score
-    calculateScore(&smarty_pants);
+            if (smarty_pants.label == smarty_pants.prediction)
+            {
+                correct++;
+            }
+        }
 
-    // Show score
-    showScore(&smarty_pants);
+        float precision = ((float)correct / 10000) * 100;
 
-    // Optimize
-    backpropagate(&smarty_pants);
+        printf("Neural network effectiveness: %.2f%%\n", precision);
+    }
+
+    if (argc > 2)
+    {
+        // Load Network
+        load(&smarty_pants, argv[1]);
+
+        char filename[41];
+        int test;
+
+        if (argc == 3)
+        {
+            printf("Predicting 1 image\n");
+        }
+        else
+        {
+            printf("Predicting %d images\n", argc - 2);
+        }
+
+        // Test on argument images
+        for (int i = 2; i < argc; i++)
+        {
+            // Get filename for test image
+            getFilename(filename, i, 1);
+
+            // Get int
+            sscanf(argv[i], "%d", &test);
+
+            // Set Activation
+            setActivation(&smarty_pants, filename, "data/mnist-test-labels.txt", test);
+
+            // Calculate activations
+            calculateSum(&smarty_pants);
+
+            // Calculate prediction
+            calculatePrediction(&smarty_pants);
+
+            printf("Image: data/mnist-test-images/tif/%05d.tif\n", test);
+
+            // Show label
+            showLabel(&smarty_pants);
+
+            // Show prediction
+            showPrediction(&smarty_pants);
+        }
+    }
 
     return 0;
 }
@@ -154,6 +222,21 @@ float sigmoid(float x)
 }
 
 /*
+ * The sigmoid derivative function
+ * 
+ * @param float x
+ * @return float sigmoid
+ */
+float sigmoidDerivative(float x)
+{
+    float ex = expf(-x);
+
+    float derivative = ex / powf((1 + ex), 2);
+
+    return derivative;
+}
+
+/*
  *  This function generates a random float
  *
  *  @param float minimum, float maximum
@@ -164,6 +247,40 @@ float randomizedFloat(float minimum, float maximum)
     float random;
     random = (((float)rand()) / (float)(RAND_MAX)) * (maximum - minimum) + minimum;
     return random;
+}
+
+/*
+ *  This functions saves the network to a binary file
+ *
+ *  @param Neural_Network *net, const char *filename
+ */
+void save(Neural_Network *net, const char *filename)
+{
+    FILE *fp = fopen(filename, "wb");
+
+    if (fp != NULL)
+    {
+        fwrite(net, sizeof(Neural_Network), 1, fp);
+    }
+
+    fclose(fp);
+}
+
+/*
+ *  This functions loads the network from a binary file
+ *
+ *  @param Neural_Network *net, const char *filename
+ */
+void load(Neural_Network *net, const char *filename)
+{
+    FILE *fp = fopen(filename, "rb");
+
+    if (fp != NULL)
+    {
+        fread(net, sizeof(Neural_Network), 1, fp);
+    }
+
+    fclose(fp);
 }
 
 /*
@@ -214,40 +331,6 @@ void randomize(Neural_Network *net)
 }
 
 /*
- *  This functions saves the network to a binary file
- *
- *  @param Neural_Network *net, const char *filename
- */
-void save(Neural_Network *net, const char *filename)
-{
-    FILE *fp = fopen(filename, "wb");
-
-    if (fp != NULL)
-    {
-        fwrite(net, sizeof(Neural_Network), 1, fp);
-    }
-
-    fclose(fp);
-}
-
-/*
- *  This functions loads the network from a binary file
- *
- *  @param Neural_Network *net, const char *filename
- */
-void load(Neural_Network *net, const char *filename)
-{
-    FILE *fp = fopen(filename, "rb");
-
-    if (fp != NULL)
-    {
-        fread(net, sizeof(Neural_Network), 1, fp);
-    }
-
-    fclose(fp);
-}
-
-/*
  *  This functions sets the activations of all the sensors in the network, and the label
  *
  *  @param Neural_Network *net, const char *filename, const char *label, int i
@@ -287,8 +370,18 @@ void showInputs(Neural_Network *net)
 {
     for (int i = 0; i < inputs; i++)
     {
-        printf("Activation of input [%3d]: %.2f\n", i, net->array_sensors[i].activation);
+        printf("Activation of input [%03d]: %.2f\n", i, net->array_sensors[i].activation);
     }
+}
+
+/*
+ *  This functions shows the correct label
+ *
+ *  @param Neural_Network *net
+ */
+void showLabel(Neural_Network *net)
+{
+    printf("Neural network correct label: %d\n", net->label);
 }
 
 /*
@@ -318,7 +411,7 @@ void calculateSum(Neural_Network *net)
         net->array_sn[i].weighted_sum = sum;
     }
 
-    // Calculate neuron neurons weighted sum
+    // Calculate hidden layer neurons weighted sum
     for (int i = 0; i < layers; i++)
     {
         for (int j = 0; j < layer_size; j++)
@@ -357,13 +450,12 @@ void calculateSum(Neural_Network *net)
 }
 
 /*
- *  This function runs through the output neurons and displays the one with the highest activation
+ *  This function runs through the output neurons and calculates the one with the highest activation
  *
  *  @param Neural_Network *net
  */
-void showPrediction(Neural_Network *net)
+void calculatePrediction(Neural_Network *net)
 {
-
     float max = net->array_outputs[0].weighted_sum;
     int prediction = 0;
 
@@ -376,7 +468,17 @@ void showPrediction(Neural_Network *net)
         }
     }
 
-    printf("Neural network prediction: %d\n", prediction);
+    net->prediction = prediction;
+}
+
+/*
+ *  This function shows the prediction
+ *
+ *  @param Neural_Network *net
+ */
+void showPrediction(Neural_Network *net)
+{
+    printf("Neural network prediction: %d\n", net->prediction);
 }
 
 /*
@@ -393,48 +495,38 @@ void showOutputs(Neural_Network *net)
 }
 
 /*
- *  This functions shows the correct label
- *
- *  @param Neural_Network *net
- */
-void showLabel(Neural_Network *net)
-{
-    printf("Neural network correct label: %d\n", net->label);
-}
-
-/*
  *  This functions calculates the score (low values = good ~ high values = bad) of the network
  *  (score = sum(pow(output_neuron.weighted_sum - expected_weighted_sum, 2)))
  *
  *  @param Neural_Network *net
  */
-void calculateScore(Neural_Network *net)
+void calculateCost(Neural_Network *net)
 {
-    float sum = 0;
+    float cost = 0;
 
     for (int i = 0; i < outputs; i++)
     {
         if (net->label == i)
         {
-            sum += pow((net->array_outputs[i].weighted_sum - 1.0), 2);
+            cost += powf((net->array_outputs[i].weighted_sum - 1.0), 2);
         }
         else
         {
-            sum += pow((net->array_outputs[i].weighted_sum - 0.0), 2);
+            cost += powf((net->array_outputs[i].weighted_sum - 0.0), 2);
         }
     }
 
-    net->score = sum;
+    net->cost = cost;
 }
 
 /*
- * This function displays the neural network score
- * 
- * @param Neural_Network *net
+ *  This functions shows the network cost
+ *
+ *  @param Neural_Network *net
  */
-void showScore(Neural_Network *net)
+void showCost(Neural_Network *net)
 {
-    printf("Neural network score: %f\n", net->score);
+    printf("Neural network cost: %f\n", net->cost);
 }
 
 /*
@@ -444,5 +536,64 @@ void showScore(Neural_Network *net)
  */
 void backpropagate(Neural_Network *net)
 {
-    // hmmm... ok, i got this..
+    // hmm..
+}
+
+/*
+ *  This functions makes the nextwork train over all examples
+ *
+ *  @param Neural_Network *net
+ */
+void train(Neural_Network *net)
+{
+    char filename[41];
+
+    // make 600 batches of 100 training examples
+    for (int i = 0; i < 600; i++)
+    {
+        for (int j = 1; j <= 100; j++)
+        {
+            // Get filename for training image
+            getFilename(filename, (i * 100) + j, 0);
+
+            // Set Activation of input neurons
+            setActivation(net, filename, "data/mnist-train-labels.txt", i);
+
+            // Calculate activations
+            calculateSum(net);
+
+            // Calculate cost
+            calculateCost(net);
+        }
+
+        // Optimize
+        backpropagate(net);
+    }
+}
+
+/*
+ *  This functions creates filename string of image
+ *
+ *  @param Neural_Network *net, const char *filename, int i, int f 
+ */
+void getFilename(char *filename, int i, int f)
+{
+
+    filename[0] = '\0';
+
+    char num[6];
+
+    char *directory = "data/mnist-train-images/txt/";
+    char *extension = ".tif.txt";
+
+    if (f == 1)
+    {
+        char *directory = "data/mnist-test-images/txt/";
+    }
+
+    sprintf(num, "%05d", i);
+
+    strcat(filename, directory);
+    strcat(filename, num);
+    strcat(filename, extension);
 }
