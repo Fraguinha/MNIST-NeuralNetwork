@@ -26,13 +26,7 @@ def main():
 
                 pixel = pixel / 255
 
-                if (pixel > 0.5):
-
-                    pixel = 1 - pixel
-
-                elif (pixel < 0.5):
-
-                    pixel = 1 - pixel
+                pixel = 1 - pixel
 
                 text_file.write(str(pixel) + "\n")
 
@@ -64,13 +58,7 @@ def main():
 
                 pixel = pixel / 255
 
-                if (pixel > 0.5):
-
-                    pixel = 1 - pixel
-
-                elif (pixel < 0.5):
-
-                    pixel = 1 - pixel
+                pixel = 1 - pixel
 
                 text_file.write(str(pixel) + "\n")
 

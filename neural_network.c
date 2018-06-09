@@ -45,8 +45,8 @@ typedef struct
     float bias;
     float weights[inputs];
 
-    // activation
     float weighted_sum;
+    float activation;
 
 } sensor_neuron;
 
@@ -56,8 +56,8 @@ typedef struct
     float bias;
     float weights[layer_size];
 
-    // activation
     float weighted_sum;
+    float activation;
 
 } neuron_neuron;
 
@@ -71,13 +71,18 @@ typedef struct
     neuron_neuron array_outputs[outputs];       // output neurons
 
     /* Derivatives */
-    float sn_derivatives[batch_size][layer_size][2];         // sensor derivatives
-    float nn_derivatives[batch_size][layers][layer_size][2]; // neuron derivatives
-    float op_derivatives[batch_size][outputs][2];            // output derivatives
+    float snw_derivative[batch_size][layer_size][inputs];             // sensor weight derivatives
+    float nnw_derivative[batch_size][layers][layer_size][layer_size]; // neuron weight derivatives
+    float opw_derivative[batch_size][outputs][layer_size];            // output weight derivatives
+
+    float snb_derivative[batch_size][layer_size];         // sensor bias derivatives
+    float nnb_derivative[batch_size][layers][layer_size]; // neuron bias derivatives
+    float opb_derivative[batch_size][outputs];            // output bias derivatives
+
+    /* Cost */
+    float cost_output[batch_size];
 
     /* Information */
-    float cost_neuron[batch_size][layers][layer_size][outputs];
-    float cost_output[batch_size][outputs];
 
     int prediction;
     int label;
@@ -107,8 +112,8 @@ void showOutputs(Neural_Network *net);
 void calculatePrediction(Neural_Network *net);
 void showPrediction(Neural_Network *net);
 
-void calculateCost(Neural_Network *net);
-void backpropagate(Neural_Network *net);
+void calculateCost(Neural_Network *net, int batch);
+void backpropagate(Neural_Network *net, int batch);
 
 void train(Neural_Network *net);
 
@@ -413,9 +418,11 @@ void calculateSum(Neural_Network *net)
 
         sum += net->array_sn[i].bias;
 
+        net->array_sn[i].weighted_sum = sum;
+
         sum = sigmoid(sum);
 
-        net->array_sn[i].weighted_sum = sum;
+        net->array_sn[i].activation = sum;
     }
 
     // Calculate hidden layer neurons weighted sum
@@ -432,9 +439,11 @@ void calculateSum(Neural_Network *net)
 
             sum += net->array_nn[i][j].bias;
 
+            net->array_nn[i][j].weighted_sum = sum;
+
             sum = sigmoid(sum);
 
-            net->array_nn[i][j].weighted_sum = sum;
+            net->array_nn[i][j].activation = sum;
         }
     }
 
@@ -450,9 +459,11 @@ void calculateSum(Neural_Network *net)
 
         sum += net->array_outputs[i].bias;
 
+        net->array_outputs[i].weighted_sum = sum;
+
         sum = sigmoid(sum);
 
-        net->array_outputs[i].weighted_sum = sum;
+        net->array_outputs[i].activation = sum;
     }
 }
 
@@ -463,14 +474,14 @@ void calculateSum(Neural_Network *net)
  */
 void calculatePrediction(Neural_Network *net)
 {
-    float max = net->array_outputs[0].weighted_sum;
+    float max = net->array_outputs[0].activation;
     int prediction = 0;
 
     for (int i = 0; i < outputs; i++)
     {
-        if (net->array_outputs[i].weighted_sum > max)
+        if (net->array_outputs[i].activation > max)
         {
-            max = net->array_outputs[i].weighted_sum;
+            max = net->array_outputs[i].activation;
             prediction = i;
         }
     }
@@ -497,25 +508,42 @@ void showOutputs(Neural_Network *net)
 {
     for (int i = 0; i < outputs; i++)
     {
-        printf("Activation of output [%d]: %.2f\n", i, net->array_outputs[i].weighted_sum);
+        printf("Activation of output [%d]: %.2f\n", i, net->array_outputs[i].activation);
     }
 }
 
 /*
  *  This functions calculates the score of the network
  *
- *  @param Neural_Network *net
+ *  @param Neural_Network *net, int batch
  */
-void calculateCost(Neural_Network *net)
+void calculateCost(Neural_Network *net, int batch)
 {
+    float sum = 0;
+
+    for (int i = 0; i < outputs; i++)
+    {
+        if (i == net->label)
+        {
+            sum += powf(1 - net->array_outputs[i].activation, 2);
+        }
+        else
+        {
+            sum += powf(net->array_outputs[i].activation, 2);
+        }
+    }
+
+    sum = sum / 2;
+
+    net->cost_output[batch] = sum;
 }
 
 /*
  *  This functions is the learning algorithm
  *
- *  @param Neural_Network *net
+ *  @param Neural_Network *net, int batch
  */
-void backpropagate(Neural_Network *net)
+void backpropagate(Neural_Network *net, int batch)
 {
 }
 
@@ -543,10 +571,10 @@ void train(Neural_Network *net)
             calculateSum(net);
 
             // Calculate cost per example
-            calculateCost(net);
+            calculateCost(net, i);
 
-            // Optimize
-            backpropagate(net);
+            // Calculate partial derivatives
+            backpropagate(net, i);
         }
     }
 }
