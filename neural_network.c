@@ -11,8 +11,14 @@
 #define inputs (28 * 28) // the inputs available to make a prediction
 #define outputs 10       // the outputs available as a prediction
 
-#define total_weights (inputs * layer_size + layers * (layer_size * layer_size) + layer_size * outputs)
-#define total_biases (layer_size + layers * layer_size + outputs)
+#define training 60000
+#define testing 10000
+
+#define train_directory "data/mnist-train-images/txt/"
+#define test_directory "data/mnist-test-images/txt/"
+
+#define train_label "data/mnist-train-labels.txt"
+#define test_label "data/mnist-test-labels.txt"
 
 /* Tweaking */
 #define layers 1      // number of layers
@@ -23,9 +29,6 @@
 
 #define min_bias -10 // maximum value for the bias
 #define max_bias 10  // maximum value for the bias
-
-#define training 60000
-#define testing 10000
 
 #define batch_size 100 // number of examples per batch
 #define train_sessions (training / batch_size)
@@ -47,8 +50,10 @@ typedef struct
 
     float error_derivative[batch_size];
 
-    float bias_derivative;
-    float weight_derivative[inputs];
+    float bias_derivative[batch_size];
+    float weight_derivative[batch_size][inputs];
+
+    float past_activations[batch_size];
 
     float weighted_sum;
     float activation;
@@ -63,8 +68,10 @@ typedef struct
 
     float error_derivative[batch_size];
 
-    float bias_derivative;
-    float weight_derivative[layer_size];
+    float bias_derivative[batch_size];
+    float weight_derivative[batch_size][layer_size];
+
+    float past_activations[batch_size];
 
     float weighted_sum;
     float activation;
@@ -107,6 +114,8 @@ void showInputs(Neural_Network *net);
 void showLabel(Neural_Network *net);
 
 void feedForward(Neural_Network *net);
+
+void saveActivation(Neural_Network *net, int batch);
 
 void showOutputs(Neural_Network *net);
 
@@ -156,7 +165,7 @@ int main(int argc, char const *argv[])
             getFilename(filename, i, 1);
 
             // Set Activation
-            setInput(&smarty_pants, filename, "data/mnist-test-labels.txt", i);
+            setInput(&smarty_pants, filename, test_label, i);
 
             // Calculate activations
             feedForward(&smarty_pants);
@@ -206,7 +215,7 @@ int main(int argc, char const *argv[])
             getFilename(filename, test, 1);
 
             // Set Activation
-            setInput(&smarty_pants, filename, "data/mnist-test-labels.txt", test);
+            setInput(&smarty_pants, filename, test_label, test);
 
             // Calculate activations
             feedForward(&smarty_pants);
@@ -236,11 +245,7 @@ int main(int argc, char const *argv[])
  */
 float sigmoid(float x)
 {
-    float ex = expf(-x);
-
-    float sigmoid = 1 / (1 + ex);
-
-    return sigmoid;
+    return 1.0 / (1.0 + expf(-x));
 }
 
 /*
@@ -251,11 +256,7 @@ float sigmoid(float x)
  */
 float sigmoidDerivative(float x)
 {
-    float ex = expf(-x);
-
-    float derivative = ex / powf((1 + ex), 2);
-
-    return derivative;
+    return sigmoid(x) * (1 - sigmoid(x));
 }
 
 /*
@@ -266,9 +267,7 @@ float sigmoidDerivative(float x)
  */
 float randomizedFloat(float minimum, float maximum)
 {
-    float random;
-    random = (((float)rand()) / (float)(RAND_MAX)) * (maximum - minimum) + minimum;
-    return random;
+    return (((float)rand()) / (float)(RAND_MAX)) * (maximum - minimum) + minimum;
 }
 
 /*
@@ -477,6 +476,36 @@ void feedForward(Neural_Network *net)
 }
 
 /*
+ *  This functions saves the networks activations during each training example
+ *
+ *  @param Neural_Network *net, int batch
+ */
+void saveActivation(Neural_Network *net, int batch)
+{
+    // for each sensor neuron
+    for (int i = 0; i < layer_size; i++)
+    {
+        net->array_sn[i].past_activations[batch] = net->array_sn[i].activation;
+    }
+
+    // for each layer
+    for (int i = 0; i < layers; i++)
+    {
+        //for each hidden neuron
+        for (int j = 0; j < layer_size; j++)
+        {
+            net->array_nn[i][j].past_activations[batch] = net->array_nn[i][j].activation;
+        }
+    }
+
+    // for each output neuron
+    for (int i = 0; i < outputs; i++)
+    {
+        net->array_outputs[i].past_activations[batch] = net->array_outputs[i].activation;
+    }
+}
+
+/*
  *  This function runs through the output neurons and calculates the one with the highest activation
  *
  *  @param Neural_Network *net
@@ -548,12 +577,14 @@ void calculateCost(Neural_Network *net, int batch)
 }
 
 /*
- *  This functions 
+ *  This function calculates all derivatives and sets new weights and biases
  *
- *  @param Neural_Network *net, int batch
+ *  @param Neural_Network *net
  */
 void backPropagate(Neural_Network *net)
 {
+    /* Calculate derivatives */
+
     // for each example in batch
     for (int i = 0; i < batch_size; i++)
     {
@@ -561,10 +592,18 @@ void backPropagate(Neural_Network *net)
         for (int j = 0; j < outputs; j++)
         {
             net->array_outputs[j].error_derivative[i] = net->cost_output[i][j] * sigmoidDerivative(net->array_outputs[j].weighted_sum);
+
+            net->array_outputs[j].bias_derivative[i] = net->array_outputs[j].error_derivative[i];
+
+            // for each weight
+            for (int k = 0; k < layer_size; k++)
+            {
+                net->array_outputs[j].weight_derivative[i][k] = net->array_nn[layers - 1][k].activation * net->array_outputs[j].error_derivative[i];
+            }
         }
 
-        // for each layer neurons
-        for (int l = layers; l >= 0; l--)
+        // for each layer of neurons
+        for (int l = layers - 1; l >= 0; l--)
         {
             // for each neuron in layer
             for (int j = 0; j < layer_size; j++)
@@ -574,13 +613,13 @@ void backPropagate(Neural_Network *net)
                 // for each neuron in layer + 1
                 for (int k = 0; k < layer_size; k++)
                 {
-                    if (l == layers && k <= outputs)
+                    if (l == layers - 1 && k <= outputs)
                     {
                         sum += net->array_outputs[k].weights[j] * net->array_outputs[k].error_derivative[i] * sigmoidDerivative(net->array_nn[l][j].weighted_sum);
                     }
                     else
                     {
-                        if (l != layers)
+                        if (l != layers - 1)
                         {
                             sum += net->array_nn[l + 1][k].weights[j] * net->array_nn[l + 1][k].error_derivative[i] * sigmoidDerivative(net->array_nn[l][j].weighted_sum);
                         }
@@ -588,6 +627,21 @@ void backPropagate(Neural_Network *net)
                 }
 
                 net->array_nn[l][j].error_derivative[i] = sum;
+
+                net->array_nn[l][j].bias_derivative[i] = net->array_nn[l][j].error_derivative[i];
+
+                // for each weight
+                for (int k = 0; k < layer_size; k++)
+                {
+                    if (l == 0)
+                    {
+                        net->array_nn[l][j].weight_derivative[i][k] = net->array_sn[k].activation * net->array_nn[l][j].error_derivative[i];
+                    }
+                    else
+                    {
+                        net->array_nn[l][j].weight_derivative[i][k] = net->array_nn[l - 1][k].activation * net->array_nn[l][j].error_derivative[i];
+                    }
+                }
             }
         }
 
@@ -603,6 +657,116 @@ void backPropagate(Neural_Network *net)
             }
 
             net->array_sn[j].error_derivative[i] = sum;
+
+            net->array_sn[j].bias_derivative[i] = net->array_sn[j].error_derivative[i];
+
+            // for each weight
+            for (int k = 0; k < inputs; k++)
+            {
+                net->array_sn[j].weight_derivative[i][k] = net->array_sensors[k].activation * net->array_sn[j].error_derivative[i];
+            }
+        }
+    }
+
+    /* Calculate average */
+
+    // for each sensor neuron
+    for (int i = 0; i < layer_size; i++)
+    {
+        float bias = 0;
+
+        // for each example
+        for (int x = 0; x < batch_size; x++)
+        {
+            bias += net->array_sn[i].bias_derivative[x];
+        }
+
+        bias = bias / batch_size;
+
+        net->array_sn[i].bias = net->array_sn[i].bias - bias;
+
+        // for each weight
+        for (int k = 0; k < inputs; k++)
+        {
+            float weight = 0;
+
+            // for each example
+            for (int x = 0; x < batch_size; x++)
+            {
+                weight += net->array_sn[i].weight_derivative[x][k];
+            }
+            
+            weight = weight / batch_size;
+
+            net->array_sn[i].weights[k] = net->array_sn[i].weights[k] - weight;
+        }
+    }
+
+    // for each layer of neurons
+    for (int l = 0; l < layers; l++)
+    {
+        // for each neuron in layer
+        for (int i = 0; i < layer_size; i++)
+        {
+            float bias = 0;
+
+            // for each example
+            for (int x = 0; x < batch_size; x++)
+            {
+                bias += net->array_nn[l][i].bias_derivative[x];
+            }
+
+            bias = bias / batch_size;
+
+            net->array_nn[l][i].bias = net->array_nn[l][i].bias - bias;
+
+            // for each weight
+            for (int k = 0; k < inputs; k++)
+            {
+                float weight = 0;
+
+                // for each example
+                for (int x = 0; x < batch_size; x++)
+                {
+                    weight += net->array_nn[l][i].weight_derivative[x][k];
+                }
+
+                weight = weight / batch_size;
+
+                net->array_nn[l][i].weights[k] = net->array_nn[l][i].weights[k] - weight;
+            }
+        }
+    }
+
+    // for each output neuron
+    for (int i = 0; i < outputs; i++)
+    {
+        float bias = 0;
+
+        // for each example
+        for (int x = 0; x < batch_size; x++)
+        {
+            bias += net->array_outputs[i].bias_derivative[x];
+        }
+
+        bias = bias / batch_size;
+
+        net->array_outputs[i].bias = net->array_outputs[i].bias - bias;
+
+        // for each weight
+        for (int k = 0; k < inputs; k++)
+        {
+            float weight = 0;
+
+            // for each example
+            for (int x = 0; x < batch_size; x++)
+            {
+                weight += net->array_outputs[i].weight_derivative[x][k];
+            }
+
+            weight = weight / batch_size;
+
+            net->array_outputs[i].weights[k] = net->array_outputs[i].weights[k] - weight;
         }
     }
 }
@@ -625,12 +789,15 @@ void train(Neural_Network *net)
             getFilename(filename, (i * batch_size) + j, 0);
 
             // Set Activation of input neurons
-            setInput(net, filename, "data/mnist-train-labels.txt", i);
+            setInput(net, filename, train_label, (i * batch_size) + j);
 
             // Calculate activations
             feedForward(net);
 
-            // Calculate cost per example
+            // Save activation
+            saveActivation(net, j - 1);
+
+            // Calculate cost
             calculateCost(net, j - 1);
         }
 
@@ -651,12 +818,12 @@ void getFilename(char *filename, int i, int f)
 
     char num[6];
 
-    char *directory = "data/mnist-train-images/txt/";
-    char *extension = ".tif.txt";
+    char *directory = train_directory;
+    char *extension = ".txt";
 
     if (f == 1)
     {
-        char *directory = "data/mnist-test-images/txt/";
+        char *directory = test_directory;
     }
 
     sprintf(num, "%05d", i);

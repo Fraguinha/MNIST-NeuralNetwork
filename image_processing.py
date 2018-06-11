@@ -10,7 +10,7 @@ def main():
 
         tif = directory + "tif/" + f
 
-        txt = directory + "txt/" + f + ".txt"
+        txt = directory + "txt/" + f[:-4] + ".txt"
 
         text_file = open(txt, "w")
 
@@ -42,7 +42,7 @@ def main():
 
         tif = directory + "tif/" + f
 
-        txt = directory + "txt/" + f + ".txt"
+        txt = directory + "txt/" + f[:-4] + ".txt"
 
         text_file = open(txt, "w")
 
