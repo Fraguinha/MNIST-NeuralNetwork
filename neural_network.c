@@ -45,6 +45,11 @@ typedef struct
     float bias;
     float weights[inputs];
 
+    float error_derivative[batch_size];
+
+    float bias_derivative;
+    float weight_derivative[inputs];
+
     float weighted_sum;
     float activation;
 
@@ -55,6 +60,11 @@ typedef struct
 {
     float bias;
     float weights[layer_size];
+
+    float error_derivative[batch_size];
+
+    float bias_derivative;
+    float weight_derivative[layer_size];
 
     float weighted_sum;
     float activation;
@@ -70,17 +80,8 @@ typedef struct
     neuron_neuron array_nn[layers][layer_size]; // layers of neuron neurons
     neuron_neuron array_outputs[outputs];       // output neurons
 
-    /* Derivatives */
-    float snw_derivative[batch_size][layer_size][inputs];             // sensor weight derivatives
-    float nnw_derivative[batch_size][layers][layer_size][layer_size]; // neuron weight derivatives
-    float opw_derivative[batch_size][outputs][layer_size];            // output weight derivatives
-
-    float snb_derivative[batch_size][layer_size];         // sensor bias derivatives
-    float nnb_derivative[batch_size][layers][layer_size]; // neuron bias derivatives
-    float opb_derivative[batch_size][outputs];            // output bias derivatives
-
     /* Cost */
-    float cost_output[batch_size];
+    float cost_output[batch_size][outputs];
 
     /* Information */
 
@@ -101,11 +102,11 @@ void load(Neural_Network *net, const char *filename);
 
 void randomize(Neural_Network *net);
 
-void setActivation(Neural_Network *net, const char *filename, const char *label, int x);
+void setInput(Neural_Network *net, const char *filename, const char *labelFilename, int x);
 void showInputs(Neural_Network *net);
 void showLabel(Neural_Network *net);
 
-void calculateSum(Neural_Network *net);
+void feedForward(Neural_Network *net);
 
 void showOutputs(Neural_Network *net);
 
@@ -113,7 +114,8 @@ void calculatePrediction(Neural_Network *net);
 void showPrediction(Neural_Network *net);
 
 void calculateCost(Neural_Network *net, int batch);
-void backpropagate(Neural_Network *net, int batch);
+
+void backPropagate(Neural_Network *net);
 
 void train(Neural_Network *net);
 
@@ -154,10 +156,10 @@ int main(int argc, char const *argv[])
             getFilename(filename, i, 1);
 
             // Set Activation
-            setActivation(&smarty_pants, filename, "data/mnist-test-labels.txt", i);
+            setInput(&smarty_pants, filename, "data/mnist-test-labels.txt", i);
 
             // Calculate activations
-            calculateSum(&smarty_pants);
+            feedForward(&smarty_pants);
 
             // Calculate prediction
             calculatePrediction(&smarty_pants);
@@ -165,6 +167,10 @@ int main(int argc, char const *argv[])
             if (smarty_pants.label == smarty_pants.prediction)
             {
                 correct++;
+            }
+            else
+            {
+                printf("Failed: %05d Predicted: %d Correct: %d\n", i, smarty_pants.prediction, smarty_pants.label);
             }
         }
 
@@ -200,10 +206,13 @@ int main(int argc, char const *argv[])
             getFilename(filename, test, 1);
 
             // Set Activation
-            setActivation(&smarty_pants, filename, "data/mnist-test-labels.txt", test);
+            setInput(&smarty_pants, filename, "data/mnist-test-labels.txt", test);
 
             // Calculate activations
-            calculateSum(&smarty_pants);
+            feedForward(&smarty_pants);
+
+            // Show output
+            showOutputs(&smarty_pants);
 
             // Calculate prediction
             calculatePrediction(&smarty_pants);
@@ -346,9 +355,9 @@ void randomize(Neural_Network *net)
 /*
  *  This functions sets the activations of all the sensors in the network, and the label
  *
- *  @param Neural_Network *net, const char *filename, const char *label, int i
+ *  @param Neural_Network *net, const char *filename, const char *labelFilename, int i
  */
-void setActivation(Neural_Network *net, const char *filename, const char *label, int x)
+void setInput(Neural_Network *net, const char *filename, const char *labelFilename, int x)
 {
     FILE *image = fopen(filename, "r");
 
@@ -359,7 +368,7 @@ void setActivation(Neural_Network *net, const char *filename, const char *label,
 
     fclose(image);
 
-    FILE *solution = fopen(label, "r");
+    FILE *solution = fopen(labelFilename, "r");
 
     int trash;
 
@@ -402,7 +411,7 @@ void showLabel(Neural_Network *net)
  *
  *  @param Neural_Network *net
  */
-void calculateSum(Neural_Network *net)
+void feedForward(Neural_Network *net)
 {
     float sum;
 
@@ -529,22 +538,73 @@ void calculateCost(Neural_Network *net, int batch)
         }
         else
         {
-            sum += powf(net->array_outputs[i].activation, 2);
+            sum += powf(0 - net->array_outputs[i].activation, 2);
         }
+
+        sum = sum / 2;
+
+        net->cost_output[batch][i] = sum;
     }
-
-    sum = sum / 2;
-
-    net->cost_output[batch] = sum;
 }
 
 /*
- *  This functions is the learning algorithm
+ *  This functions 
  *
  *  @param Neural_Network *net, int batch
  */
-void backpropagate(Neural_Network *net, int batch)
+void backPropagate(Neural_Network *net)
 {
+    // for each example in batch
+    for (int i = 0; i < batch_size; i++)
+    {
+        // for each output neuron
+        for (int j = 0; j < outputs; j++)
+        {
+            net->array_outputs[j].error_derivative[i] = net->cost_output[i][j] * sigmoidDerivative(net->array_outputs[j].weighted_sum);
+        }
+
+        // for each layer neurons
+        for (int l = layers; l >= 0; l--)
+        {
+            // for each neuron in layer
+            for (int j = 0; j < layer_size; j++)
+            {
+                float sum = 0;
+
+                // for each neuron in layer + 1
+                for (int k = 0; k < layer_size; k++)
+                {
+                    if (l == layers && k <= outputs)
+                    {
+                        sum += net->array_outputs[k].weights[j] * net->array_outputs[k].error_derivative[i] * sigmoidDerivative(net->array_nn[l][j].weighted_sum);
+                    }
+                    else
+                    {
+                        if (l != layers)
+                        {
+                            sum += net->array_nn[l + 1][k].weights[j] * net->array_nn[l + 1][k].error_derivative[i] * sigmoidDerivative(net->array_nn[l][j].weighted_sum);
+                        }
+                    }
+                }
+
+                net->array_nn[l][j].error_derivative[i] = sum;
+            }
+        }
+
+        // for each sensor neuron
+        for (int j = 0; j < layer_size; j++)
+        {
+            float sum = 0;
+
+            // for each neuron in layer + 1
+            for (int k = 0; k < layer_size; k++)
+            {
+                sum += net->array_sn[k].weights[j] * net->array_sn[k].error_derivative[i] * sigmoidDerivative(net->array_sn[j].weighted_sum);
+            }
+
+            net->array_sn[j].error_derivative[i] = sum;
+        }
+    }
 }
 
 /*
@@ -556,8 +616,8 @@ void train(Neural_Network *net)
 {
     char filename[41];
 
-    // make 600 batches of 100 training examples
-    for (int i = 0; i < batch_size; i++)
+    // make batches of training examples
+    for (int i = 0; i < train_sessions; i++)
     {
         for (int j = 1; j <= batch_size; j++)
         {
@@ -565,17 +625,17 @@ void train(Neural_Network *net)
             getFilename(filename, (i * batch_size) + j, 0);
 
             // Set Activation of input neurons
-            setActivation(net, filename, "data/mnist-train-labels.txt", i);
+            setInput(net, filename, "data/mnist-train-labels.txt", i);
 
             // Calculate activations
-            calculateSum(net);
+            feedForward(net);
 
             // Calculate cost per example
-            calculateCost(net, i);
-
-            // Calculate partial derivatives
-            backpropagate(net, i);
+            calculateCost(net, j - 1);
         }
+
+        // Calculate error
+        backPropagate(net);
     }
 }
 
