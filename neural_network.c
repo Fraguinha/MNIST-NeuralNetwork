@@ -24,11 +24,11 @@
 #define layers 1      // number of layers
 #define layer_size 16 // number of neurons for each layer
 
-#define min_weight -10 // minimum value for the weights
-#define max_weight 10  // maximum value for the weights
+#define min_weight -1 // minimum value for the weights
+#define max_weight +1 // maximum value for the weights
 
 #define min_bias -10 // maximum value for the bias
-#define max_bias 10  // maximum value for the bias
+#define max_bias +10 // maximum value for the bias
 
 #define batch_size 100 // number of examples per batch
 #define train_sessions (training / batch_size)
@@ -92,6 +92,7 @@ typedef struct
 
     /* Information */
 
+    float precision;
     int prediction;
     int label;
 
@@ -128,6 +129,10 @@ void backPropagate(Neural_Network *net);
 
 void train(Neural_Network *net);
 
+void test(Neural_Network *net);
+
+void showPrecision(Neural_Network *net);
+
 void getFilename(char *filename, int i, int f);
 
 int main(int argc, char const *argv[])
@@ -141,12 +146,7 @@ int main(int argc, char const *argv[])
         randomize(&smarty_pants);
 
         // Train network
-        printf("Learning from %d images\n", training);
         train(&smarty_pants);
-
-        // Save Network
-        printf("Saving network to smarty_pants.bin\n");
-        save(&smarty_pants, "smarty_pants.bin");
     }
 
     if (argc == 2)
@@ -154,38 +154,8 @@ int main(int argc, char const *argv[])
         // Load Network
         load(&smarty_pants, argv[1]);
 
-        char filename[41];
-        int correct = 0;
-
-        // Test on all test images
-        printf("Testing on %d images\n", testing);
-        for (int i = 1; i <= testing; i++)
-        {
-            // Get filename for image
-            getFilename(filename, i, 1);
-
-            // Set Activation
-            setInput(&smarty_pants, filename, test_label, i);
-
-            // Calculate activations
-            feedForward(&smarty_pants);
-
-            // Calculate prediction
-            calculatePrediction(&smarty_pants);
-
-            if (smarty_pants.label == smarty_pants.prediction)
-            {
-                correct++;
-            }
-            else
-            {
-                printf("Failed: %05d Predicted: %d Correct: %d\n", i, smarty_pants.prediction, smarty_pants.label);
-            }
-        }
-
-        float precision = ((float)correct / testing) * 100;
-
-        printf("Neural network effectiveness: %.2f%%\n", precision);
+        // Train network
+        train(&smarty_pants);
     }
 
     if (argc > 2)
@@ -239,7 +209,7 @@ int main(int argc, char const *argv[])
 
 /*
  * The sigmoid function
- * 
+ *
  * @param float x
  * @return float sigmoid
  */
@@ -250,7 +220,7 @@ float sigmoid(float x)
 
 /*
  * The sigmoid derivative function
- * 
+ *
  * @param float x
  * @return float sigmoid
  */
@@ -695,7 +665,7 @@ void backPropagate(Neural_Network *net)
             {
                 weight += net->array_sn[i].weight_derivative[x][k];
             }
-            
+
             weight = weight / batch_size;
 
             net->array_sn[i].weights[k] = net->array_sn[i].weights[k] - weight;
@@ -772,44 +742,111 @@ void backPropagate(Neural_Network *net)
 }
 
 /*
- *  This functions makes the nextwork train over all examples
+ *  This functions trains the network
  *
  *  @param Neural_Network *net
  */
 void train(Neural_Network *net)
 {
     char filename[41];
+    int loops = 1;
 
-    // make batches of training examples
-    for (int i = 0; i < train_sessions; i++)
+    printf("Starting training session on %d images\n", training);
+
+    while (net->precision < 95)
     {
-        for (int j = 1; j <= batch_size; j++)
+        printf("Run: [%03d]\n", loops);
+
+        // make batches of training examples
+        for (int i = 0; i < train_sessions; i++)
         {
-            // Get filename for training image
-            getFilename(filename, (i * batch_size) + j, 0);
+            for (int j = 1; j <= batch_size; j++)
+            {
+                // Get filename for training image
+                getFilename(filename, (i * batch_size) + j, 0);
 
-            // Set Activation of input neurons
-            setInput(net, filename, train_label, (i * batch_size) + j);
+                // Set Activation of input neurons
+                setInput(net, filename, train_label, (i * batch_size) + j);
 
-            // Calculate activations
-            feedForward(net);
+                // Calculate activations
+                feedForward(net);
 
-            // Save activation
-            saveActivation(net, j - 1);
+                // Save activation
+                saveActivation(net, j - 1);
 
-            // Calculate cost
-            calculateCost(net, j - 1);
+                // Calculate cost
+                calculateCost(net, j - 1);
+            }
+
+            // Algorithm
+            backPropagate(net);
         }
 
-        // Calculate error
-        backPropagate(net);
+        // Test Network
+        test(net);
+
+        // Show Precision
+        showPrecision(net);
+
+        // Save Network
+        save(net, "smarty_pants.bin");
+
+        loops++;
     }
+
+    // Save Network
+    printf("Saved neural network to smarty_pants.bin\n");
+    save(net, "smarty_pants.bin");
+}
+
+/*
+ *  This functions trains the network
+ *
+ *  @param Neural_Network *net
+ */
+void test(Neural_Network *net)
+{
+    char filename[41];
+    int correct = 0;
+
+    // Test on all test images
+    for (int i = 1; i <= testing; i++)
+    {
+        // Get filename for image
+        getFilename(filename, i, 1);
+
+        // Set Activation
+        setInput(net, filename, test_label, i);
+
+        // Calculate activations
+        feedForward(net);
+
+        // Calculate prediction
+        calculatePrediction(net);
+
+        if (net->label == net->prediction)
+        {
+            correct++;
+        }
+    }
+
+    net->precision = ((float)correct / testing) * 100;
+}
+
+/*
+ *  This functions shows the network precision
+ *
+ *  @param Neural_Network *net
+ */
+void showPrecision(Neural_Network *net)
+{
+    printf("Neural network effectiveness: %.2f%%\n", net->precision);
 }
 
 /*
  *  This functions creates filename string of image
  *
- *  @param Neural_Network *net, const char *filename, int i, int f 
+ *  @param Neural_Network *net, const char *filename, int i, int f
  */
 void getFilename(char *filename, int i, int f)
 {
