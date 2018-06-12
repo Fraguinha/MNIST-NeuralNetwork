@@ -290,38 +290,38 @@ void randomize(Neural_Network *net)
     srand((unsigned int)time(NULL));
 
     // Randomize sensor neurons weights and biases
-    for (int i = 0; i < layer_size; i++)
+    for (int j = 0; j < layer_size; j++)
     {
-        net->array_sn[i].bias = randomizedFloat(min_bias, max_bias);
+        net->array_sn[j].bias = randomizedFloat(min_bias, max_bias);
 
         for (int k = 0; k < inputs; k++)
         {
-            net->array_sn[i].weights[k] = randomizedFloat(min_weight, max_weight);
+            net->array_sn[j].weights[k] = randomizedFloat(min_weight, max_weight);
         }
     }
 
     // Randomize hidden layer neurons weights and biases
     for (int l = 0; l < layers; l++)
     {
-        for (int i = 0; i < layer_size; i++)
+        for (int j = 0; j < layer_size; j++)
         {
-            net->array_nn[l][i].bias = randomizedFloat(min_bias, max_bias);
+            net->array_nn[l][j].bias = randomizedFloat(min_bias, max_bias);
 
             for (int k = 0; k < layer_size; k++)
             {
-                net->array_nn[l][i].weights[k] = randomizedFloat(min_weight, max_weight);
+                net->array_nn[l][j].weights[k] = randomizedFloat(min_weight, max_weight);
             }
         }
     }
 
     // Randomize output neurons weights and biases
-    for (int i = 0; i < outputs; i++)
+    for (int j = 0; j < outputs; j++)
     {
-        net->array_outputs[i].bias = randomizedFloat(min_bias, max_bias);
+        net->array_outputs[j].bias = randomizedFloat(min_bias, max_bias);
 
         for (int k = 0; k < layer_size; k++)
         {
-            net->array_outputs[i].weights[k] = randomizedFloat(min_weight, max_weight);
+            net->array_outputs[j].weights[k] = randomizedFloat(min_weight, max_weight);
         }
     }
 }
