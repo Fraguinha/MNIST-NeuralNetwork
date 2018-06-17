@@ -1,5 +1,12 @@
-from PIL import Image
+# Libraries
+# Standard
+
+import json
 import os
+
+# 3rd Party Libraries
+
+from PIL import Image
 
 
 def main():
@@ -8,31 +15,49 @@ def main():
 
     for f in os.listdir(directory + "tif/"):
 
-        tif = directory + "tif/" + f
+        # Create directory names
 
-        txt = directory + "txt/" + f[:-4] + ".txt"
+        tif_dir = directory + "tif/" + f
 
-        text_file = open(txt, "w")
+        json_dir = directory + "json/" + f[:-4] + ".json"
 
-        digit_image = Image.open(tif)
+        txt_dir = directory + "txt/" + f[:-4] + ".txt"
+
+        # Get pixels
+
+        digit_image = Image.open(tif_dir)
+
+        pixels = []
 
         for i in range(28):
 
             for j in range(28):
 
-                coordenate = (i, j)
+                pixel = digit_image.getpixel((i, j))
 
-                pixel = digit_image.getpixel(coordenate)
+                pixel = 1 - (pixel / 255)
 
-                pixel = pixel / 255
-
-                pixel = 1 - pixel
-
-                text_file.write(str(pixel) + "\n")
-
-                del coordenate
+                pixels.append(pixel)
 
         del digit_image
+
+        # Save to json
+
+        json_file = open(json_dir, "w")
+
+        data = {"pixel": pixels}
+
+        json.dump(data, json_file)
+
+        json_file.close()
+
+        # Save to text
+
+        text_file = open(txt_dir, "w")
+
+        for x in pixels:
+
+            text_file.write(str(x) + "\n")
 
         text_file.close()
 
@@ -40,31 +65,49 @@ def main():
 
     for f in os.listdir(directory + "tif/"):
 
-        tif = directory + "tif/" + f
+        # Create directory names
 
-        txt = directory + "txt/" + f[:-4] + ".txt"
+        tif_dir = directory + "tif/" + f
 
-        text_file = open(txt, "w")
+        json_dir = directory + "json/" + f[:-4] + ".json"
 
-        digit_image = Image.open(tif)
+        txt_dir = directory + "txt/" + f[:-4] + ".txt"
+
+        # Get pixels
+
+        digit_image = Image.open(tif_dir)
+
+        pixels = []
 
         for i in range(28):
 
             for j in range(28):
 
-                coordenate = (i, j)
+                pixel = digit_image.getpixel((i, j))
 
-                pixel = digit_image.getpixel(coordenate)
+                pixel = 1 - (pixel / 255)
 
-                pixel = pixel / 255
-
-                pixel = 1 - pixel
-
-                text_file.write(str(pixel) + "\n")
-
-                del coordenate
+                pixels.append(pixel)
 
         del digit_image
+
+        # Save to json
+
+        json_file = open(json_dir, "w")
+
+        data = {"pixel": pixels}
+
+        json.dump(data, json_file)
+
+        json_file.close()
+
+        # Save to text
+
+        text_file = open(txt_dir, "w")
+
+        for x in pixels:
+
+            text_file.write(str(x) + "\n")
 
         text_file.close()
 
