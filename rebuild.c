@@ -1,4 +1,21 @@
-/* Libraries */
+/*
+    neural_network.c
+    
+    This program creates and trains a neural network.
+    
+    compilation: gcc neural_network.c -o neural_network.exe -lm
+    
+    usage: ./neural_network.exe
+    usage: ./neural_network.exe [neural_network.bin]
+    usage: ./neural_network.exe [neural_network.bin] [...]
+    
+    author: Joao Fraga
+    e-mail: joaoluisfreirefraga@gmail.com
+*/
+
+/************* 
+ * Libraries *
+ *************/
 
 #include <stdlib.h>
 #include <string.h>
@@ -6,10 +23,12 @@
 #include <math.h>
 #include <time.h>
 
-/* Definitions */
+/*************** 
+ * Definitions *
+ ***************/
 
-#define inputs (28 * 28) // number of inputs
-#define outputs 10       // number of outputs
+#define inputs (28 * 28) // number of inputs     (each of the 784 pixels)
+#define outputs 10       // number of outputs {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 
 #define train_directory "data/mnist-train-images/txt/"
 #define test_directory "data/mnist-test-images/txt/"
@@ -17,10 +36,13 @@
 #define train_label "data/mnist-train-labels.txt"
 #define test_label "data/mnist-test-labels.txt"
 
-/* Tweaking */
-#define layers 0                               // number of layers
+/************ 
+ * Tweaking *
+ ************/
+
 #define layer_size 15                          // number of neurons for each layer
-#define layer_size_h (layers ? layer_size : 0) // number of neurons for each hidden layer
+#define layers 0                               // number of layers  within hidden layer
+#define layer_size_h (layers ? layer_size : 0) // number of neurons within hidden layer for each hidden layer
 
 #define min_weight -2 // minimum value for the weights
 #define max_weight +2 // maximum value for the weights
@@ -28,7 +50,9 @@
 #define min_bias -1 // maximum value for the bias
 #define max_bias +1 // maximum value for the bias
 
-/* Structures */
+/************** 
+ * Structures *
+ **************/
 
 /* Sensor */
 typedef struct
@@ -72,17 +96,35 @@ typedef struct
     int prediction;
     int label;
 
+    /* Training */
+    float cost[outputs]
+
 } Neural_Network;
+
+/************************
+ * Function Definitions *
+ ************************/
 
 /*
  * The rectifier function
  *
  * @param float x
- * @return float sigmoid
+ * @return float relu
  */
 float relu(float x)
 {
     return x > 0 ? x : 0;
+}
+
+/*
+ * The relu derivative function
+ *
+ * @param float x
+ * @return float relu
+ */
+float reluDerivative(float x)
+{
+    return x > 0 ? 1 : 0;
 }
 
 /*
@@ -262,11 +304,57 @@ void feedForward(Neural_Network *net)
 }
 
 /*
- *  This function calculates all partial derivatives
+ *  This functions calculates the cost of the network
+ *
+ *  @param Neural_Network *net, int batch
+ */
+void calculateCost(Neural_Network *net)
+{
+    for (int j = 0; j < outputs; j++)
+    {
+        if (j == net->label)
+        {
+            net->cost[j] = net->array_outputs[j].activation - 1;
+        }
+        else
+        {
+            net->cost[j] = net->array_outputs[j].activation - 0;
+        }
+    }
+}
+
+/*
+ *  
  *
  *  @param Neural_Network *net
  */
-void backPropagate(Neural_Network *net)
+void feedBackward(Neural_Network *net)
+{
+}
+
+/*
+ *  This function propagates values through the network
+ *
+ *  @param Neural_Network *net
+ */
+void propagate(Neural_Network *net)
+{
+    // Forward pass
+    feedForward(net);
+
+    // Calculate cost
+    calculateCost(net);
+
+    // Backward pass
+    feedBackward(net);
+}
+
+/*
+ *  This performs Stochastic Gradient Descent on the network
+ *
+ *  @param Neural_Network *net
+ */
+void stochasticGradientDescent(Neural_Network *net)
 {
 }
 
@@ -331,6 +419,10 @@ void load(Neural_Network *net, const char *filename)
 
     fclose(fp);
 }
+
+/*****************
+ * Main Function *
+ *****************/
 
 int main(int argc, char const *argv[])
 {
