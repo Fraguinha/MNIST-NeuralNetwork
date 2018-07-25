@@ -30,6 +30,9 @@
 #define inputs (28 * 28) // number of inputs     (each of the 784 pixels)
 #define outputs 10       // number of outputs {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 
+#define training 60000 // number of training samples
+#define testing 10000  // number of testing samples
+
 #define train_directory "data/mnist-train-images/txt/"
 #define test_directory "data/mnist-test-images/txt/"
 
@@ -49,6 +52,9 @@
 
 #define min_bias -1 // maximum value for the bias
 #define max_bias +1 // maximum value for the bias
+
+#define batch_size 100                         // number of examples per batch
+#define train_sessions (training / batch_size) // number of training sessions per epoch
 
 #define learning_rate 0.05 // rate of learning
 #define max_epoch 6000     // maximum number of epochs
@@ -110,25 +116,25 @@ typedef struct
  ************************/
 
 /*
- * The rectifier function
+ * The sigmoid function
  *
  * @param float x
- * @return float relu
+ * @return float sigmoid
  */
-float relu(float x)
+float sigmoid(float x)
 {
-    return x > 0 ? x : 0;
+    return 1.0 / (1.0 + expf(-x));
 }
 
 /*
- * The relu derivative function
+ * The sigmoid derivative function
  *
  * @param float x
- * @return float relu
+ * @return float sigmoid
  */
-float reluDerivative(float x)
+float sigmoidDerivative(float x)
 {
-    return x > 0 ? 1 : 0;
+    return sigmoid(x) * (1 - sigmoid(x));
 }
 
 /*
@@ -204,7 +210,7 @@ void randomize(Neural_Network *net)
 /*
  *  This functions creates filename string of an image
  *
- *  @param Neural_Network *net, const char *filename, int number, int flag
+ *  @param const char *filename, int number, int flag
  */
 void getFilename(char *filename, int number, int flag)
 {
@@ -232,10 +238,15 @@ void getFilename(char *filename, int number, int flag)
 /*
  *  This functions sets the activations of all the sensors in the network, and the label
  *
- *  @param Neural_Network *net, const char *tifInfo, const char *labelInfo, int number
+ *  @param Neural_Network *net, const char *labelInfo, int number, int flag
  */
-void setInput(Neural_Network *net, const char *tifInfo, const char *labelInfo, int number)
+void setInput(Neural_Network *net, const char *labelInfo, int number, int flag)
 {
+
+    char tifInfo[41];
+
+    getFilename(tifInfo, number, flag);
+
     FILE *image = fopen(tifInfo, "r");
 
     for (int i = 0; i < inputs; i++)
@@ -283,7 +294,7 @@ void feedForward(Neural_Network *net)
 
         net->array_inputs[j].weighted_sum = sum;
 
-        net->array_inputs[j].activation = relu(sum);
+        net->array_inputs[j].activation = sigmoid(sum);
     }
 
     if (layers)
@@ -305,7 +316,7 @@ void feedForward(Neural_Network *net)
 
                 net->array_hidden[l][j].weighted_sum = sum;
 
-                net->array_hidden[l][j].activation = relu(sum);
+                net->array_hidden[l][j].activation = sigmoid(sum);
             }
         }
 
@@ -323,7 +334,7 @@ void feedForward(Neural_Network *net)
 
             net->array_outputs[j].weighted_sum = sum;
 
-            net->array_outputs[j].activation = relu(sum);
+            net->array_outputs[j].activation = sigmoid(sum);
         }
     }
     else
@@ -342,7 +353,7 @@ void feedForward(Neural_Network *net)
 
             net->array_outputs[j].weighted_sum = sum;
 
-            net->array_outputs[j].activation = relu(sum);
+            net->array_outputs[j].activation = sigmoid(sum);
         }
     }
 }
@@ -386,7 +397,7 @@ void feedBackward(Neural_Network *net)
                         error += net->array_outputs[k].weights[j] * net->array_outputs[k].error;
                     }
 
-                    error = error * reluDerivative(net->array_hidden[l][j].weighted_sum);
+                    error = error * sigmoidDerivative(net->array_hidden[l][j].weighted_sum);
 
                     net->array_hidden[l][j].error = error;
                 }
@@ -398,7 +409,7 @@ void feedBackward(Neural_Network *net)
                         error += net->array_hidden[l + 1][k].weights[j] * net->array_hidden[l + 1][k].error;
                     }
 
-                    error = error * reluDerivative(net->array_hidden[l][j].weighted_sum);
+                    error = error * sigmoidDerivative(net->array_hidden[l][j].weighted_sum);
 
                     net->array_hidden[l][j].error = error;
                 }
@@ -416,7 +427,7 @@ void feedBackward(Neural_Network *net)
                 error += net->array_hidden[0][k].weights[j] * net->array_hidden[0][k].error;
             }
 
-            error = error * reluDerivative(net->array_inputs[j].weighted_sum);
+            error = error * sigmoidDerivative(net->array_inputs[j].weighted_sum);
 
             net->array_inputs[j].error = error;
         }
@@ -434,7 +445,7 @@ void feedBackward(Neural_Network *net)
                 error += net->array_outputs[k].weights[j] * net->array_outputs[k].error;
             }
 
-            error = error * reluDerivative(net->array_inputs[j].weighted_sum);
+            error = error * sigmoidDerivative(net->array_inputs[j].weighted_sum);
 
             net->array_inputs[j].error = error;
         }
@@ -462,8 +473,23 @@ void propagate(Neural_Network *net)
  */
 void stochasticGradientDescent(Neural_Network *net)
 {
-}
+    float input_errors[layer_size][batch_size];
+    float hidden_errors[layers][layer_size][batch_size];
+    float output_errors[outputs][batch_size];
 
+    // make batches of training examples
+    for (int i = 0; i < train_sessions; i++)
+    {
+        for (int j = 1; j <= batch_size; j++)
+        {
+            // Set Activation of input neurons
+            setInput(net, train_label, (i * batch_size) + j, 0);
+
+            // Propagate values through network
+            propagate(net);
+        }
+    }
+}
 /*
  *  This functions displays relevant information about network to help with debugging
  *
@@ -635,6 +661,9 @@ int main(int argc, char const *argv[])
 
     // Randomize the Neural Network
     randomize(&smarty_pants);
+
+    // Stochastic Gradient Descent
+    stochasticGradientDescent(&smarty_pants);
 
     // Debug
     debug(&smarty_pants);
