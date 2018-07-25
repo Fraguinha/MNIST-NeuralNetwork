@@ -73,6 +73,8 @@ typedef struct
     float weighted_sum;
     float activation;
 
+    float error;
+
 } sensor_neuron;
 
 /* Neuron */
@@ -83,6 +85,8 @@ typedef struct
 
     float weighted_sum;
     float activation;
+
+    float error;
 
 } neuron_neuron;
 
@@ -98,9 +102,6 @@ typedef struct
     /* Information */
     int prediction;
     int label;
-
-    /* Training */
-    float cost[outputs];
 
 } Neural_Network;
 
@@ -163,6 +164,7 @@ void randomize(Neural_Network *net)
 
         net->array_inputs[j].weighted_sum = 0;
         net->array_inputs[j].activation = 0;
+        net->array_inputs[j].error = 0;
     }
 
     // Randomize hidden layer neurons weights and biases
@@ -179,6 +181,7 @@ void randomize(Neural_Network *net)
 
             net->array_hidden[l][j].weighted_sum = 0;
             net->array_hidden[l][j].activation = 0;
+            net->array_hidden[l][j].error = 0;
         }
     }
 
@@ -194,6 +197,7 @@ void randomize(Neural_Network *net)
 
         net->array_outputs[j].weighted_sum = 0;
         net->array_outputs[j].activation = 0;
+        net->array_outputs[j].error = 0;
     }
 }
 
@@ -344,32 +348,97 @@ void feedForward(Neural_Network *net)
 }
 
 /*
- *  This functions calculates the cost of the network
- *
- *  @param Neural_Network *net, int batch
- */
-void calculateCost(Neural_Network *net)
-{
-    for (int j = 0; j < outputs; j++)
-    {
-        if (j == net->label)
-        {
-            net->cost[j] = net->array_outputs[j].activation - 1;
-        }
-        else
-        {
-            net->cost[j] = net->array_outputs[j].activation - 0;
-        }
-    }
-}
-
-/*
  *  
  *
  *  @param Neural_Network *net
  */
 void feedBackward(Neural_Network *net)
 {
+
+    // Calculate output neurons error
+    for (int j = 0; j < outputs; j++)
+    {
+        if (j == net->label)
+        {
+            net->array_outputs[j].error = net->array_outputs[j].activation - 1;
+        }
+        else
+        {
+            net->array_outputs[j].error = net->array_outputs[j].activation - 0;
+        }
+    }
+
+    if (layers)
+    {
+
+        // Calculate hidden layer neurons error
+        for (int l = layers - 1; l >= 0; l--)
+        {
+            for (int j = 0; j < layer_size; j++)
+            {
+
+                float error = 0;
+
+                if (l == layers - 1)
+                {
+                    for (int k = 0; k < outputs; k++)
+                    {
+                        error += net->array_outputs[k].weights[j] * net->array_outputs[k].error;
+                    }
+
+                    error = error * reluDerivative(net->array_hidden[l][j].weighted_sum);
+
+                    net->array_hidden[l][j].error = error;
+                }
+                else
+                {
+
+                    for (int k = 0; k < layer_size; k++)
+                    {
+                        error += net->array_hidden[l + 1][k].weights[j] * net->array_hidden[l + 1][k].error;
+                    }
+
+                    error = error * reluDerivative(net->array_hidden[l][j].weighted_sum);
+
+                    net->array_hidden[l][j].error = error;
+                }
+            }
+        }
+
+        // Calculate input neurons error
+        for (int j = 0; j < layer_size; j++)
+        {
+
+            float error = 0;
+
+            for (int k = 0; k < layer_size; k++)
+            {
+                error += net->array_hidden[0][k].weights[j] * net->array_hidden[0][k].error;
+            }
+
+            error = error * reluDerivative(net->array_inputs[j].weighted_sum);
+
+            net->array_inputs[j].error = error;
+        }
+    }
+    else
+    {
+        // Calculate input neurons error
+        for (int j = 0; j < layer_size; j++)
+        {
+
+            float error = 0;
+
+            for (int k = 0; k < outputs; k++)
+            {
+                error += net->array_outputs[k].weights[j] * net->array_outputs[k].error;
+            }
+
+            error = error * reluDerivative(net->array_inputs[j].weighted_sum);
+
+            net->array_inputs[j].error = error;
+        }
+    }
 }
 
 /*
@@ -381,9 +450,6 @@ void propagate(Neural_Network *net)
 {
     // Forward pass
     feedForward(net);
-
-    // Calculate cost
-    calculateCost(net);
 
     // Backward pass
     feedBackward(net);
