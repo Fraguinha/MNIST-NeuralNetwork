@@ -1,7 +1,7 @@
 /*
     neural_network.c
     
-    This program creates and trains a neural network.
+    This program creates and trains a Multi-Layered Perceptron using backpropagation.
     
     compilation: gcc neural_network.c -o neural_network.exe -lm
     
@@ -50,6 +50,9 @@
 #define min_bias -1 // maximum value for the bias
 #define max_bias +1 // maximum value for the bias
 
+#define learning_rate 0.05 // rate of learning
+#define max_epoch 6000     // maximum number of epochs
+
 /************** 
  * Structures *
  **************/
@@ -97,7 +100,7 @@ typedef struct
     int label;
 
     /* Training */
-    float cost[outputs]
+    float cost[outputs];
 
 } Neural_Network;
 
@@ -157,6 +160,9 @@ void randomize(Neural_Network *net)
         {
             net->array_inputs[j].weights[k] = randomizedFloat(min_weight, max_weight);
         }
+
+        net->array_inputs[j].weighted_sum = 0;
+        net->array_inputs[j].activation = 0;
     }
 
     // Randomize hidden layer neurons weights and biases
@@ -170,6 +176,9 @@ void randomize(Neural_Network *net)
             {
                 net->array_hidden[l][j].weights[k] = randomizedFloat(min_weight, max_weight);
             }
+
+            net->array_hidden[l][j].weighted_sum = 0;
+            net->array_hidden[l][j].activation = 0;
         }
     }
 
@@ -182,17 +191,48 @@ void randomize(Neural_Network *net)
         {
             net->array_outputs[j].weights[k] = randomizedFloat(min_weight, max_weight);
         }
+
+        net->array_outputs[j].weighted_sum = 0;
+        net->array_outputs[j].activation = 0;
     }
+}
+
+/*
+ *  This functions creates filename string of an image
+ *
+ *  @param Neural_Network *net, const char *filename, int number, int flag
+ */
+void getFilename(char *filename, int number, int flag)
+{
+
+    filename[0] = '\0';
+
+    char num[6];
+
+    sprintf(num, "%05d", number);
+
+    char *directory = train_directory;
+
+    if (flag == 1)
+    {
+        char *directory = test_directory;
+    }
+
+    char *extension = ".txt";
+
+    strcat(filename, directory);
+    strcat(filename, num);
+    strcat(filename, extension);
 }
 
 /*
  *  This functions sets the activations of all the sensors in the network, and the label
  *
- *  @param Neural_Network *net, const char *tifImage, const char *txtLabel, int number
+ *  @param Neural_Network *net, const char *tifInfo, const char *labelInfo, int number
  */
-void setInput(Neural_Network *net, const char *tifImage, const char *txtLabel, int number)
+void setInput(Neural_Network *net, const char *tifInfo, const char *labelInfo, int number)
 {
-    FILE *image = fopen(tifImage, "r");
+    FILE *image = fopen(tifInfo, "r");
 
     for (int i = 0; i < inputs; i++)
     {
@@ -201,18 +241,18 @@ void setInput(Neural_Network *net, const char *tifImage, const char *txtLabel, i
 
     fclose(image);
 
-    FILE *solution = fopen(txtLabel, "r");
+    FILE *label = fopen(labelInfo, "r");
 
     int trash;
 
     for (int j = 1; j < number; j++)
     {
-        fscanf(solution, "%d", &trash);
+        fscanf(label, "%d", &trash);
     }
 
-    fscanf(solution, "%d", &net->label);
+    fscanf(label, "%d", &net->label);
 
-    fclose(solution);
+    fclose(label);
 }
 
 /*
@@ -359,31 +399,137 @@ void stochasticGradientDescent(Neural_Network *net)
 }
 
 /*
- *  This functions creates filename string of an image
+ *  This functions displays relevant information about network to help with debugging
  *
- *  @param Neural_Network *net, const char *filename, int number, int flag
+ *  @param Neural_Network *net, const char *filename
  */
-void getFilename(char *filename, int number, int flag)
+void debug(Neural_Network *net)
 {
+    printf("v------------------------------------------------------------------------------v\n");
 
-    filename[0] = '\0';
+    printf("\nInputs:\n");
 
-    char num[6];
-
-    sprintf(num, "%05d", number);
-
-    char *directory = train_directory;
-
-    if (flag == 1)
+    // Inputs
+    for (int j = 0; j < layer_size; j++)
     {
-        char *directory = test_directory;
+        printf("\nNeuron No. [%d]\n", j);
+
+        printf("\nBIAS:\n[%09.6f]\n", net->array_inputs[j].bias);
+
+        printf("\nWEIGHTS:");
+
+        for (int k = 0; k < inputs; k++)
+        {
+            if (k % 8 == 0)
+            {
+                printf("\n");
+            }
+
+            printf("[%09.6f]", net->array_inputs[j].weights[k]);
+        }
+
+        printf("\n\nWEIGHTED SUM:\n[%09.6f]\n", net->array_inputs[j].weighted_sum);
+
+        printf("\nACTIVATION:\n[%09.6f]\n", net->array_inputs[j].activation);
+
+        printf("\n");
     }
 
-    char *extension = ".txt";
+    if (layers)
+    {
 
-    strcat(filename, directory);
-    strcat(filename, num);
-    strcat(filename, extension);
+        printf("\nHidden Layers:\n");
+
+        // Hidden layers
+        for (int l = 0; l < layers; l++)
+        {
+            for (int j = 0; j < layer_size; j++)
+            {
+                printf("\nNeuron No. [%d]\n", j);
+
+                printf("\nBIAS:\n[%09.6f]\n", net->array_hidden[l][j].bias);
+
+                printf("\nWEIGHTS:");
+
+                for (int k = 0; k < layer_size; k++)
+                {
+                    if (k % 3 == 0)
+                    {
+                        printf("\n");
+                    }
+
+                    printf("[%09.6f]", net->array_hidden[l][j].weights[k]);
+                }
+
+                printf("\n\nWEIGHTED SUM:\n[%09.6f]\n", net->array_hidden[l][j].weighted_sum);
+
+                printf("\nACTIVATION:\n[%09.6f]\n", net->array_hidden[l][j].activation);
+
+                printf("\n");
+            }
+        }
+
+        printf("\nOutputs:\n");
+
+        // Outputs
+        for (int j = 0; j < outputs; j++)
+        {
+            printf("\nNeuron No. [%d]\n", j);
+
+            printf("\nBIAS:\n[%09.6f]\n", net->array_outputs[j].bias);
+
+            printf("\nWEIGHTS:");
+
+            for (int k = 0; k < layer_size; k++)
+            {
+                if (k % 3 == 0)
+                {
+                    printf("\n");
+                }
+
+                printf("[%09.6f]", net->array_outputs[j].weights[k]);
+            }
+
+            printf("\n\nWEIGHTED SUM:\n[%09.6f]\n", net->array_outputs[j].weighted_sum);
+
+            printf("\nACTIVATION:\n[%09.6f]\n", net->array_outputs[j].activation);
+
+            printf("\n");
+        }
+    }
+    else
+    {
+
+        printf("\nOutputs:\n");
+
+        // Outputs
+        for (int j = 0; j < outputs; j++)
+        {
+            printf("\nNeuron No. [%d]\n", j);
+
+            printf("\nBIAS:\n[%09.6f]\n", net->array_outputs[j].bias);
+
+            printf("\nWEIGHTS:");
+
+            for (int k = 0; k < layer_size; k++)
+            {
+                if (k % 3 == 0)
+                {
+                    printf("\n");
+                }
+
+                printf("[%09.6f]", net->array_outputs[j].weights[k]);
+            }
+
+            printf("\n\nWEIGHTED SUM:\n[%09.6f]\n", net->array_outputs[j].weighted_sum);
+
+            printf("\nACTIVATION:\n[%09.6f]\n", net->array_outputs[j].activation);
+
+            printf("\n");
+        }
+    }
+
+    printf("<------------------------------------------------------------------------------>\n");
 }
 
 /*
@@ -428,4 +574,10 @@ int main(int argc, char const *argv[])
 {
     // Create the Neural Network
     Neural_Network smarty_pants;
+
+    // Randomize the Neural Network
+    randomize(&smarty_pants);
+
+    // Debug
+    debug(&smarty_pants);
 }
