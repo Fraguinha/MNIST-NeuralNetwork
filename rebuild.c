@@ -431,8 +431,6 @@ void debug(Neural_Network *net)
         printf("\n\nWEIGHTED SUM:\n[%09.6f]\n", net->array_inputs[j].weighted_sum);
 
         printf("\nACTIVATION:\n[%09.6f]\n", net->array_inputs[j].activation);
-
-        printf("\n");
     }
 
     if (layers)
@@ -464,8 +462,6 @@ void debug(Neural_Network *net)
                 printf("\n\nWEIGHTED SUM:\n[%09.6f]\n", net->array_hidden[l][j].weighted_sum);
 
                 printf("\nACTIVATION:\n[%09.6f]\n", net->array_hidden[l][j].activation);
-
-                printf("\n");
             }
         }
 
@@ -493,8 +489,6 @@ void debug(Neural_Network *net)
             printf("\n\nWEIGHTED SUM:\n[%09.6f]\n", net->array_outputs[j].weighted_sum);
 
             printf("\nACTIVATION:\n[%09.6f]\n", net->array_outputs[j].activation);
-
-            printf("\n");
         }
     }
     else
@@ -524,12 +518,10 @@ void debug(Neural_Network *net)
             printf("\n\nWEIGHTED SUM:\n[%09.6f]\n", net->array_outputs[j].weighted_sum);
 
             printf("\nACTIVATION:\n[%09.6f]\n", net->array_outputs[j].activation);
-
-            printf("\n");
         }
     }
 
-    printf("<------------------------------------------------------------------------------>\n");
+    printf("\n<------------------------------------------------------------------------------>\n");
 }
 
 /*

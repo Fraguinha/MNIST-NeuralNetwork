@@ -1,7 +1,7 @@
 # Libraries
+
 # Standard
 
-import json
 import os
 
 # 3rd Party Libraries
@@ -18,8 +18,6 @@ def main():
         # Create directory names
 
         tif_dir = directory + "tif/" + f
-
-        json_dir = directory + "json/" + f[:-4] + ".json"
 
         txt_dir = directory + "txt/" + f[:-4] + ".txt"
 
@@ -40,16 +38,6 @@ def main():
                 pixels.append(pixel)
 
         del digit_image
-
-        # Save to json
-
-        json_file = open(json_dir, "w")
-
-        data = {"pixel": pixels}
-
-        json.dump(data, json_file)
-
-        json_file.close()
 
         # Save to text
 
@@ -69,8 +57,6 @@ def main():
 
         tif_dir = directory + "tif/" + f
 
-        json_dir = directory + "json/" + f[:-4] + ".json"
-
         txt_dir = directory + "txt/" + f[:-4] + ".txt"
 
         # Get pixels
@@ -90,16 +76,6 @@ def main():
                 pixels.append(pixel)
 
         del digit_image
-
-        # Save to json
-
-        json_file = open(json_dir, "w")
-
-        data = {"pixel": pixels}
-
-        json.dump(data, json_file)
-
-        json_file.close()
 
         # Save to text
 
