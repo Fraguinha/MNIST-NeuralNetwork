@@ -56,8 +56,8 @@
 #define batch_size 100                         // number of examples per batch
 #define train_sessions (training / batch_size) // number of training sessions per epoch
 
-#define learning_rate 0.05 // rate of learning
-#define max_epoch 6000     // maximum number of epochs
+#define learning_rate 0.05 // how much to change the weights and biases
+#define max_epochs 1000    // maximum number of epochs
 
 /************** 
  * Structures *
@@ -114,6 +114,199 @@ typedef struct
 /************************
  * Function Definitions *
  ************************/
+
+/*
+ *  This functions displays relevant information about network to help with debugging
+ *
+ *  @param Neural_Network *net, const char *filename
+ */
+void debug(Neural_Network *net)
+{
+    printf("v------------------------------------------------------------------------------v\n");
+
+    // Sensors
+
+    printf("\nSensors:\n");
+
+    printf("\nACTIVATION MATRIX:\n\n");
+
+    for (int j = 0; j < inputs; j++)
+    {
+        printf("[%09.7f]", net->array_sensors[j].activation);
+
+        printf("\n");
+    }
+
+    // Inputs
+
+    printf("\nInputs:\n");
+
+    printf("\nWEIGHT MATRIX:\n\n");
+
+    for (int k = 0; k < inputs; k++)
+    {
+
+        for (int j = 0; j < layer_size; j++)
+        {
+            printf("[%09.6f]", net->array_inputs[j].weights[k]);
+        }
+
+        printf("\n");
+    }
+
+    printf("\nBIAS MATRIX:\n\n");
+
+    for (int j = 0; j < layer_size; j++)
+    {
+        printf("[%09.6f]", net->array_inputs[j].bias);
+    }
+
+    printf("\n");
+
+    printf("\nWEIGHTEDSUM MATRIX:\n\n");
+
+    for (int j = 0; j < layer_size; j++)
+    {
+        printf("[%09.5f]", net->array_inputs[j].weighted_sum);
+    }
+
+    printf("\n");
+
+    printf("\nACTIVATION MATRIX:\n\n");
+
+    for (int j = 0; j < layer_size; j++)
+    {
+        printf("[%09.7f]", net->array_inputs[j].activation);
+    }
+
+    printf("\n");
+
+    printf("\nERROR MATRIX:\n\n");
+
+    for (int j = 0; j < layer_size; j++)
+    {
+        printf("[%09.6f]", net->array_inputs[j].error);
+    }
+
+    printf("\n");
+
+    // Hidden
+
+    if (layers)
+    {
+        printf("\nHidden:\n");
+
+        for (int l = 0; l < layers; l++)
+        {
+
+            printf("\nLayer %d:\n", l);
+
+            printf("\nWEIGHT MATRIX:\n\n");
+
+            for (int k = 0; k < layer_size; k++)
+            {
+
+                for (int j = 0; j < layer_size; j++)
+                {
+                    printf("[%09.6f]", net->array_hidden[l][j].weights[k]);
+                }
+
+                printf("\n");
+            }
+
+            printf("\nBIAS MATRIX:\n\n");
+
+            for (int j = 0; j < layer_size; j++)
+            {
+                printf("[%09.6f]", net->array_hidden[l][j].bias);
+            }
+
+            printf("\n");
+
+            printf("\nWEIGHTEDSUM MATRIX:\n\n");
+
+            for (int j = 0; j < layer_size; j++)
+            {
+                printf("[%09.5f]", net->array_hidden[l][j].weighted_sum);
+            }
+
+            printf("\n");
+
+            printf("\nACTIVATION MATRIX:\n\n");
+
+            for (int j = 0; j < layer_size; j++)
+            {
+                printf("[%09.7f]", net->array_hidden[l][j].activation);
+            }
+
+            printf("\n");
+
+            printf("\nERROR MATRIX:\n\n");
+
+            for (int j = 0; j < layer_size; j++)
+            {
+                printf("[%09.6f]", net->array_hidden[l][j].error);
+            }
+
+            printf("\n");
+        }
+    }
+
+    // Output
+
+    printf("\nOutputs:\n");
+
+    printf("\nWEIGHT MATRIX:\n\n");
+
+    for (int k = 0; k < layer_size; k++)
+    {
+
+        for (int j = 0; j < outputs; j++)
+        {
+            printf("[%09.6f]", net->array_outputs[j].weights[k]);
+        }
+
+        printf("\n");
+    }
+
+    printf("\nBIAS MATRIX:\n\n");
+
+    for (int j = 0; j < outputs; j++)
+    {
+        printf("[%09.6f]", net->array_outputs[j].bias);
+    }
+
+    printf("\n");
+
+    printf("\nWEIGHTEDSUM MATRIX:\n\n");
+
+    for (int j = 0; j < outputs; j++)
+    {
+        printf("[%09.5f]", net->array_outputs[j].weighted_sum);
+    }
+
+    printf("\n");
+
+    printf("\nACTIVATION MATRIX:\n\n");
+
+    for (int j = 0; j < outputs; j++)
+    {
+        printf("[%09.7f]", net->array_outputs[j].activation);
+    }
+
+    printf("\n");
+
+    printf("\nERROR MATRIX:\n\n");
+
+    for (int j = 0; j < outputs; j++)
+    {
+        printf("[%09.6f]", net->array_outputs[j].error);
+    }
+
+    printf("\n");
+
+    printf("\n<------------------------------------------------------------------------------>\n");
+}
 
 /*
  * The sigmoid function
@@ -477,143 +670,27 @@ void stochasticGradientDescent(Neural_Network *net)
     float hidden_errors[layers][layer_size][batch_size];
     float output_errors[outputs][batch_size];
 
-    // make batches of training examples
-    for (int i = 0; i < train_sessions; i++)
+    // for each epoch
+    // for (int e = 0; e < max_epochs; e++)
     {
-        for (int j = 1; j <= batch_size; j++)
+        // for each batch in epoch
+        for (int b = 0; b < train_sessions; b++)
         {
-            // Set Activation of input neurons
-            setInput(net, train_label, (i * batch_size) + j, 0);
+            printf("Batch number: %03d\n", b + 1);
 
-            // Propagate values through network
-            propagate(net);
-        }
-    }
-}
-/*
- *  This functions displays relevant information about network to help with debugging
- *
- *  @param Neural_Network *net, const char *filename
- */
-void debug(Neural_Network *net)
-{
-    printf("v------------------------------------------------------------------------------v\n");
-
-    printf("\nInputs:\n");
-
-    // Inputs
-    for (int j = 0; j < layer_size; j++)
-    {
-        printf("\nNeuron No. [%d]\n", j);
-
-        printf("\nBIAS:\n[%09.6f]\n", net->array_inputs[j].bias);
-
-        printf("\nWEIGHTS:");
-
-        for (int k = 0; k < inputs; k++)
-        {
-            if (k % 8 == 0)
+            // for each example in batch
+            for (int x = 1; x <= batch_size; x++)
             {
-                printf("\n");
-            }
+                // Set Activation of input neurons
+                setInput(net, train_label, (b * batch_size) + x, 0);
 
-            printf("[%09.6f]", net->array_inputs[j].weights[k]);
-        }
+                // Propagate values through network
+                propagate(net);
 
-        printf("\n\nWEIGHTED SUM:\n[%09.6f]\n", net->array_inputs[j].weighted_sum);
-
-        printf("\nACTIVATION:\n[%09.6f]\n", net->array_inputs[j].activation);
-    }
-
-    if (layers)
-    {
-
-        printf("\nHidden Layers:\n");
-
-        // Hidden layers
-        for (int l = 0; l < layers; l++)
-        {
-            for (int j = 0; j < layer_size; j++)
-            {
-                printf("\nNeuron No. [%d]\n", j);
-
-                printf("\nBIAS:\n[%09.6f]\n", net->array_hidden[l][j].bias);
-
-                printf("\nWEIGHTS:");
-
-                for (int k = 0; k < layer_size; k++)
-                {
-                    if (k % 3 == 0)
-                    {
-                        printf("\n");
-                    }
-
-                    printf("[%09.6f]", net->array_hidden[l][j].weights[k]);
-                }
-
-                printf("\n\nWEIGHTED SUM:\n[%09.6f]\n", net->array_hidden[l][j].weighted_sum);
-
-                printf("\nACTIVATION:\n[%09.6f]\n", net->array_hidden[l][j].activation);
+                // CARRY ON HERE //
             }
         }
-
-        printf("\nOutputs:\n");
-
-        // Outputs
-        for (int j = 0; j < outputs; j++)
-        {
-            printf("\nNeuron No. [%d]\n", j);
-
-            printf("\nBIAS:\n[%09.6f]\n", net->array_outputs[j].bias);
-
-            printf("\nWEIGHTS:");
-
-            for (int k = 0; k < layer_size; k++)
-            {
-                if (k % 3 == 0)
-                {
-                    printf("\n");
-                }
-
-                printf("[%09.6f]", net->array_outputs[j].weights[k]);
-            }
-
-            printf("\n\nWEIGHTED SUM:\n[%09.6f]\n", net->array_outputs[j].weighted_sum);
-
-            printf("\nACTIVATION:\n[%09.6f]\n", net->array_outputs[j].activation);
-        }
     }
-    else
-    {
-
-        printf("\nOutputs:\n");
-
-        // Outputs
-        for (int j = 0; j < outputs; j++)
-        {
-            printf("\nNeuron No. [%d]\n", j);
-
-            printf("\nBIAS:\n[%09.6f]\n", net->array_outputs[j].bias);
-
-            printf("\nWEIGHTS:");
-
-            for (int k = 0; k < layer_size; k++)
-            {
-                if (k % 3 == 0)
-                {
-                    printf("\n");
-                }
-
-                printf("[%09.6f]", net->array_outputs[j].weights[k]);
-            }
-
-            printf("\n\nWEIGHTED SUM:\n[%09.6f]\n", net->array_outputs[j].weighted_sum);
-
-            printf("\nACTIVATION:\n[%09.6f]\n", net->array_outputs[j].activation);
-        }
-    }
-
-    printf("\n<------------------------------------------------------------------------------>\n");
 }
 
 /*
@@ -662,9 +739,15 @@ int main(int argc, char const *argv[])
     // Randomize the Neural Network
     randomize(&smarty_pants);
 
-    // Stochastic Gradient Descent
-    stochasticGradientDescent(&smarty_pants);
+    // Set input
+    setInput(&smarty_pants, train_label, 1, 0);
+
+    // Propagate values through the Neural Network
+    propagate(&smarty_pants);
 
     // Debug
     debug(&smarty_pants);
+
+    // Stochastic Gradient Descent
+    // stochasticGradientDescent(&smarty_pants);
 }
