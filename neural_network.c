@@ -57,7 +57,7 @@
 #define train_sessions (training / batch_size) // number of training sessions per epoch
 
 #define learning_rate 0.05 // how much to change the weights and biases
-#define max_epochs 1000    // maximum number of epochs
+#define max_epochs 5       // maximum number of epochs
 
 /************** 
  * Structures *
@@ -132,7 +132,7 @@ void debug(Neural_Network *net)
 
     for (int j = 0; j < inputs; j++)
     {
-        printf("[%09.7f]", net->array_sensors[j].activation);
+        printf("[%9.7f]", net->array_sensors[j].activation);
 
         printf("\n");
     }
@@ -148,7 +148,7 @@ void debug(Neural_Network *net)
 
         for (int j = 0; j < layer_size; j++)
         {
-            printf("[%09.6f]", net->array_inputs[j].weights[k]);
+            printf("[%9.6f]", net->array_inputs[j].weights[k]);
         }
 
         printf("\n");
@@ -158,7 +158,7 @@ void debug(Neural_Network *net)
 
     for (int j = 0; j < layer_size; j++)
     {
-        printf("[%09.6f]", net->array_inputs[j].bias);
+        printf("[%9.6f]", net->array_inputs[j].bias);
     }
 
     printf("\n");
@@ -167,7 +167,7 @@ void debug(Neural_Network *net)
 
     for (int j = 0; j < layer_size; j++)
     {
-        printf("[%09.5f]", net->array_inputs[j].weighted_sum);
+        printf("[%9.5f]", net->array_inputs[j].weighted_sum);
     }
 
     printf("\n");
@@ -176,7 +176,7 @@ void debug(Neural_Network *net)
 
     for (int j = 0; j < layer_size; j++)
     {
-        printf("[%09.7f]", net->array_inputs[j].activation);
+        printf("[%9.7f]", net->array_inputs[j].activation);
     }
 
     printf("\n");
@@ -185,7 +185,7 @@ void debug(Neural_Network *net)
 
     for (int j = 0; j < layer_size; j++)
     {
-        printf("[%09.6f]", net->array_inputs[j].error);
+        printf("[%9.6f]", net->array_inputs[j].error);
     }
 
     printf("\n");
@@ -208,7 +208,7 @@ void debug(Neural_Network *net)
 
                 for (int j = 0; j < layer_size; j++)
                 {
-                    printf("[%09.6f]", net->array_hidden[l][j].weights[k]);
+                    printf("[%9.6f]", net->array_hidden[l][j].weights[k]);
                 }
 
                 printf("\n");
@@ -218,7 +218,7 @@ void debug(Neural_Network *net)
 
             for (int j = 0; j < layer_size; j++)
             {
-                printf("[%09.6f]", net->array_hidden[l][j].bias);
+                printf("[%9.6f]", net->array_hidden[l][j].bias);
             }
 
             printf("\n");
@@ -227,7 +227,7 @@ void debug(Neural_Network *net)
 
             for (int j = 0; j < layer_size; j++)
             {
-                printf("[%09.5f]", net->array_hidden[l][j].weighted_sum);
+                printf("[%9.5f]", net->array_hidden[l][j].weighted_sum);
             }
 
             printf("\n");
@@ -236,7 +236,7 @@ void debug(Neural_Network *net)
 
             for (int j = 0; j < layer_size; j++)
             {
-                printf("[%09.7f]", net->array_hidden[l][j].activation);
+                printf("[%9.7f]", net->array_hidden[l][j].activation);
             }
 
             printf("\n");
@@ -245,7 +245,7 @@ void debug(Neural_Network *net)
 
             for (int j = 0; j < layer_size; j++)
             {
-                printf("[%09.6f]", net->array_hidden[l][j].error);
+                printf("[%9.6f]", net->array_hidden[l][j].error);
             }
 
             printf("\n");
@@ -263,7 +263,7 @@ void debug(Neural_Network *net)
 
         for (int j = 0; j < outputs; j++)
         {
-            printf("[%09.6f]", net->array_outputs[j].weights[k]);
+            printf("[%9.6f]", net->array_outputs[j].weights[k]);
         }
 
         printf("\n");
@@ -273,7 +273,7 @@ void debug(Neural_Network *net)
 
     for (int j = 0; j < outputs; j++)
     {
-        printf("[%09.6f]", net->array_outputs[j].bias);
+        printf("[%9.6f]", net->array_outputs[j].bias);
     }
 
     printf("\n");
@@ -282,7 +282,7 @@ void debug(Neural_Network *net)
 
     for (int j = 0; j < outputs; j++)
     {
-        printf("[%09.5f]", net->array_outputs[j].weighted_sum);
+        printf("[%9.5f]", net->array_outputs[j].weighted_sum);
     }
 
     printf("\n");
@@ -291,7 +291,7 @@ void debug(Neural_Network *net)
 
     for (int j = 0; j < outputs; j++)
     {
-        printf("[%09.7f]", net->array_outputs[j].activation);
+        printf("[%9.7f]", net->array_outputs[j].activation);
     }
 
     printf("\n");
@@ -300,7 +300,7 @@ void debug(Neural_Network *net)
 
     for (int j = 0; j < outputs; j++)
     {
-        printf("[%09.6f]", net->array_outputs[j].error);
+        printf("[%9.6f]", net->array_outputs[j].error);
     }
 
     printf("\n");
@@ -564,11 +564,11 @@ void feedBackward(Neural_Network *net)
     {
         if (j == net->label)
         {
-            net->array_outputs[j].error = net->array_outputs[j].activation - 1;
+            net->array_outputs[j].error = (net->array_outputs[j].activation - 1.0) * sigmoidDerivative(net->array_outputs[j].weighted_sum);
         }
         else
         {
-            net->array_outputs[j].error = net->array_outputs[j].activation - 0;
+            net->array_outputs[j].error = (net->array_outputs[j].activation - 0.0) * sigmoidDerivative(net->array_outputs[j].weighted_sum);
         }
     }
 
@@ -670,8 +670,12 @@ void stochasticGradientDescent(Neural_Network *net)
     float hidden_errors[layers][layer_size][batch_size];
     float output_errors[outputs][batch_size];
 
+    float average_input[layer_size];
+    float average_hidden[layer_size];
+    float average_output[outputs];
+
     // for each epoch
-    // for (int e = 0; e < max_epochs; e++)
+    for (int e = 0; e < max_epochs; e++)
     {
         // for each batch in epoch
         for (int b = 0; b < train_sessions; b++)
@@ -679,16 +683,38 @@ void stochasticGradientDescent(Neural_Network *net)
             printf("Batch number: %03d\n", b + 1);
 
             // for each example in batch
-            for (int x = 1; x <= batch_size; x++)
+            for (int x = 0; x < batch_size; x++)
             {
                 // Set Activation of input neurons
-                setInput(net, train_label, (b * batch_size) + x, 0);
+                setInput(net, train_label, (b * batch_size) + x + 1, 0);
 
                 // Propagate values through network
                 propagate(net);
 
-                // CARRY ON HERE //
+                // Save errors
+                for (int j = 0; j < layer_size; j++)
+                {
+                    input_errors[j][x] = net->array_inputs[j].error;
+                }
+
+                if (layers)
+                {
+                    for (int l = 0; l < layers; l++)
+                    {
+                        for (int j = 0; j < layer_size; j++)
+                        {
+                            hidden_errors[l][j][x] = net->array_hidden[l][j].error;
+                        }
+                    }
+                }
+
+                for (int j = 0; j < outputs; j++)
+                {
+                    output_errors[j][x] = net->array_outputs[j].error;
+                }
             }
+
+            // CODE HERE //
         }
     }
 }
@@ -733,21 +759,27 @@ void load(Neural_Network *net, const char *filename)
 
 int main(int argc, char const *argv[])
 {
+
     // Create the Neural Network
     Neural_Network smarty_pants;
 
-    // Randomize the Neural Network
-    randomize(&smarty_pants);
+    if (argc == 1)
+    {
+        // Randomize the Neural Network
+        randomize(&smarty_pants);
 
-    // Set input
-    setInput(&smarty_pants, train_label, 1, 0);
-
-    // Propagate values through the Neural Network
-    propagate(&smarty_pants);
-
-    // Debug
-    debug(&smarty_pants);
+        // Save the Neural Network
+        save(&smarty_pants, "smarty_pants.bin");
+    }
+    else
+    {
+        // Load the Neural Network
+        load(&smarty_pants, argv[1]);
+    }
 
     // Stochastic Gradient Descent
-    // stochasticGradientDescent(&smarty_pants);
+    stochasticGradientDescent(&smarty_pants);
+
+    // Save the Neural Network
+    save(&smarty_pants, "smarty_pants.bin");
 }
