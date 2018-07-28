@@ -3,7 +3,7 @@
     
     This program creates and trains a Neural Network using Stochastic Gradient Decent.
     
-    compilation: gcc neural_network.c -o neural_network.exe
+    compilation: gcc neural_network.c -o neural_network.exe -lm
     
     usage: ./neural_network.exe
     usage: ./neural_network.exe [neural_network.bin]
@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 #include <time.h>
 
 /*************** 
@@ -498,16 +499,40 @@ void update(Neural_Network *net)
 {
     // Calculate averages
     float average_input_bias[layer_size];
-    float average_hidden_bias[layers][layer_size];
-    float average_output_bias[outputs];
-
     float average_input_weights[layer_size][inputs];
+
+    float average_hidden_bias[layers][layer_size];
     float average_hidden_weights[layers][layer_size][layer_size];
+
+    float average_output_bias[outputs];
     float average_output_weights[outputs][layer_size];
+
+    float sum_bias;
+    float sum_weights;
 
     // Inputs
     for (int j = 0; j < layer_size; j++)
     {
+        sum_bias = 0;
+
+        for (int x = 0; x < batch_size; x++)
+        {
+            sum_bias += net->array_inputs[j].bias_error[x];
+        }
+
+        average_input_bias[j] = sum_bias / batch_size;
+
+        for (int k = 0; k < inputs; k++)
+        {
+            sum_weights = 0;
+
+            for (int x = 0; x < batch_size; x++)
+            {
+                sum_weights += net->array_inputs[j].weights_error[k][x];
+            }
+
+            average_input_weights[j][k] = sum_weights / batch_size;
+        }
     }
 
     // Hidden
@@ -517,6 +542,26 @@ void update(Neural_Network *net)
         {
             for (int j = 0; j < layer_size; j++)
             {
+                sum_bias = 0;
+
+                for (int x = 0; x < batch_size; x++)
+                {
+                    sum_bias += net->array_hidden[l][j].bias_error[x];
+                }
+
+                average_hidden_bias[l][j] = sum_bias / batch_size;
+
+                for (int k = 0; k < layer_size; k++)
+                {
+                    sum_weights = 0;
+
+                    for (int x = 0; x < batch_size; x++)
+                    {
+                        sum_weights += net->array_hidden[l][j].weights_error[k][x];
+                    }
+
+                    average_hidden_weights[l][j][k] = sum_weights / batch_size;
+                }
             }
         }
     }
@@ -524,7 +569,29 @@ void update(Neural_Network *net)
     // Outputs
     for (int j = 0; j < outputs; j++)
     {
+        sum_bias = 0;
+
+        for (int x = 0; x < batch_size; x++)
+        {
+            sum_bias += net->array_outputs[j].bias_error[x];
+        }
+
+        average_output_bias[j] = sum_bias / batch_size;
+
+        for (int k = 0; k < layer_size; k++)
+        {
+            sum_weights = 0;
+
+            for (int x = 0; x < batch_size; x++)
+            {
+                sum_weights += net->array_outputs[j].weights_error[k][x];
+            }
+
+            average_output_weights[j][k] = sum_weights / batch_size;
+        }
     }
+
+    // Adjust parameters
 }
 
 /*
@@ -597,7 +664,6 @@ void load(Neural_Network *net, const char *filename)
 
 int main(int argc, char const *argv[])
 {
-
     // Create the Neural Network
     Neural_Network smarty_pants;
 
