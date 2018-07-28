@@ -592,6 +592,41 @@ void update(Neural_Network *net)
     }
 
     // Adjust parameters
+    for (int j = 0; j < layer_size; j++)
+    {
+        net->array_inputs[j].bias = net->array_inputs[j].bias - (learning * average_input_bias[j]);
+
+        for (int k = 0; k < inputs; k++)
+        {
+            net->array_inputs[j].weights[k] = net->array_inputs[j].weights[k] - (learning * average_input_weights[j][k]);
+        }
+    }
+
+    if (layers)
+    {
+        for (int l = 0; l < layers; l++)
+        {
+            for (int j = 0; j < layer_size; j++)
+            {
+                net->array_hidden[l][j].bias = net->array_hidden[l][j].bias - (learning * average_hidden_bias[l][j]);
+
+                for (int k = 0; k < layer_size; k++)
+                {
+                    net->array_hidden[l][k].weights[k] = net->array_hidden[l][k].weights[k] - (learning * average_hidden_weights[l][j][k]);
+                }
+            }
+        }
+    }
+
+    for (int j = 0; j < outputs; j++)
+    {
+        net->array_outputs[j].bias = net->array_outputs[j].bias - (learning * average_output_bias[j]);
+
+        for (int k = 0; k < layer_size; k++)
+        {
+            net->array_outputs[j].weights[k] = net->array_outputs[j].weights[k] - (learning * average_output_weights[j][k]);
+        }
+    }
 }
 
 /*
