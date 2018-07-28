@@ -43,8 +43,8 @@
  ************/
 
 #define layer_size 15                          // number of neurons for each layer
-#define layers 0                               // number of layers  within hidden layer
-#define layer_size_h (layers ? layer_size : 0) // number of neurons within hidden layer for each hidden layer
+#define layers 0                               // number of hidden layers
+#define layer_size_h (layers ? layer_size : 0) // number of hidden layer neurons
 
 #define min_weight -2 // minimum value for the weights
 #define max_weight +2 // maximum value for the weights
@@ -78,8 +78,8 @@ typedef struct
     float weighted_sum;
     float activation;
 
-    float bias_error;
-    float weights_error[inputs];
+    float bias_error[batch_size];
+    float weights_error[inputs][batch_size];
 
 } sensor_neuron;
 
@@ -92,8 +92,8 @@ typedef struct
     float weighted_sum;
     float activation;
 
-    float bias_error;
-    float weights_error[layer_size];
+    float bias_error[batch_size];
+    float weights_error[layer_size][batch_size];
 
 } neuron_neuron;
 
@@ -168,10 +168,6 @@ void randomize(Neural_Network *net)
         {
             net->array_inputs[j].weights[k] = randomizedFloat(min_weight, max_weight);
         }
-
-        net->array_inputs[j].weighted_sum = 0;
-        net->array_inputs[j].activation = 0;
-        net->array_inputs[j].bias_error = 0;
     }
 
     // Randomize hidden layer neurons weights and biases
@@ -185,10 +181,6 @@ void randomize(Neural_Network *net)
             {
                 net->array_hidden[l][j].weights[k] = randomizedFloat(min_weight, max_weight);
             }
-
-            net->array_hidden[l][j].weighted_sum = 0;
-            net->array_hidden[l][j].activation = 0;
-            net->array_hidden[l][j].bias_error = 0;
         }
     }
 
@@ -201,10 +193,6 @@ void randomize(Neural_Network *net)
         {
             net->array_outputs[j].weights[k] = randomizedFloat(min_weight, max_weight);
         }
-
-        net->array_outputs[j].weighted_sum = 0;
-        net->array_outputs[j].activation = 0;
-        net->array_outputs[j].bias_error = 0;
     }
 }
 
@@ -273,7 +261,7 @@ void setInput(Neural_Network *net, const char *labelInfo, int number, int flag)
 
 /*
  *  This functions calculates the weighted sum of all the neurons in the network
- *  (weighted sum = sum(weights * activations) - bias)
+ *  (weighted sum[l] = sum(weights[l] * activations[l-1]) - bias[l])
  *
  *  @param Neural_Network *net
  */
@@ -360,11 +348,12 @@ void feedForward(Neural_Network *net)
 }
 
 /*
- *  
+ *  This function propagates backward the error on all neurons in the network
+ *  (error[l] = (weights[l+1] * error[l+1]) * derivativeOfActivation(weighted_sum[l])
  *
  *  @param Neural_Network *net
  */
-void feedBackward(Neural_Network *net)
+void feedBackward(Neural_Network *net, int x)
 {
 
     // Calculate output neurons error
@@ -372,22 +361,22 @@ void feedBackward(Neural_Network *net)
     {
         if (j == net->label)
         {
-            net->array_outputs[j].bias_error = (net->array_outputs[j].activation - 1.0) * sigmoidDerivative(net->array_outputs[j].weighted_sum);
+            net->array_outputs[j].bias_error[x] = (net->array_outputs[j].activation - 1.0) * sigmoidDerivative(net->array_outputs[j].weighted_sum);
         }
         else
         {
-            net->array_outputs[j].bias_error = (net->array_outputs[j].activation - 0.0) * sigmoidDerivative(net->array_outputs[j].weighted_sum);
+            net->array_outputs[j].bias_error[x] = (net->array_outputs[j].activation - 0.0) * sigmoidDerivative(net->array_outputs[j].weighted_sum);
         }
 
         for (int k = 0; k < layer_size; k++)
         {
             if (layers)
             {
-                net->array_outputs[j].weights_error[k] = net->array_outputs[j].bias_error * net->array_hidden[layers - 1][k].activation;
+                net->array_outputs[j].weights_error[k][x] = net->array_outputs[j].bias_error[x] * net->array_hidden[layers - 1][k].activation;
             }
             else
             {
-                net->array_outputs[j].weights_error[k] = net->array_outputs[j].bias_error * net->array_inputs[k].activation;
+                net->array_outputs[j].weights_error[k][x] = net->array_outputs[j].bias_error[x] * net->array_inputs[k].activation;
             }
         }
     }
@@ -407,35 +396,35 @@ void feedBackward(Neural_Network *net)
                 {
                     for (int k = 0; k < outputs; k++)
                     {
-                        bias_error += net->array_outputs[k].weights[j] * net->array_outputs[k].bias_error;
+                        bias_error += net->array_outputs[k].weights[j] * net->array_outputs[k].bias_error[x];
                     }
 
                     bias_error = bias_error * sigmoidDerivative(net->array_hidden[l][j].weighted_sum);
 
-                    net->array_hidden[l][j].bias_error = bias_error;
+                    net->array_hidden[l][j].bias_error[x] = bias_error;
                 }
                 else
                 {
 
                     for (int k = 0; k < layer_size; k++)
                     {
-                        bias_error += net->array_hidden[l + 1][k].weights[j] * net->array_hidden[l + 1][k].bias_error;
+                        bias_error += net->array_hidden[l + 1][k].weights[j] * net->array_hidden[l + 1][k].bias_error[x];
                     }
 
                     bias_error = bias_error * sigmoidDerivative(net->array_hidden[l][j].weighted_sum);
 
-                    net->array_hidden[l][j].bias_error = bias_error;
+                    net->array_hidden[l][j].bias_error[x] = bias_error;
                 }
 
                 for (int k = 0; k < layer_size; k++)
                 {
                     if (l == 0)
                     {
-                        net->array_hidden[l][j].weights_error[k] = net->array_hidden[l][j].bias_error * net->array_inputs[k].activation;
+                        net->array_hidden[l][j].weights_error[k][x] = net->array_hidden[l][j].bias_error[x] * net->array_inputs[k].activation;
                     }
                     else
                     {
-                        net->array_hidden[l][j].weights_error[k] = net->array_hidden[l][j].bias_error * net->array_hidden[l - 1][k].activation;
+                        net->array_hidden[l][j].weights_error[k][x] = net->array_hidden[l][j].bias_error[x] * net->array_hidden[l - 1][k].activation;
                     }
                 }
             }
@@ -448,22 +437,22 @@ void feedBackward(Neural_Network *net)
 
             for (int k = 0; k < layer_size; k++)
             {
-                bias_error += net->array_hidden[0][k].weights[j] * net->array_hidden[0][k].bias_error;
+                bias_error += net->array_hidden[0][k].weights[j] * net->array_hidden[0][k].bias_error[x];
             }
 
             bias_error = bias_error * sigmoidDerivative(net->array_inputs[j].weighted_sum);
 
-            net->array_inputs[j].bias_error = bias_error;
+            net->array_inputs[j].bias_error[x] = bias_error;
 
             for (int k = 0; k < inputs; k++)
             {
-                net->array_inputs[j].weights_error[k] = net->array_inputs[j].bias_error * net->array_sensors[k].activation;
+                net->array_inputs[j].weights_error[k][x] = net->array_inputs[j].bias_error[x] * net->array_sensors[k].activation;
             }
         }
     }
     else
     {
-        // Calculate input neurons bias_error
+        // Calculate input neurons error
         for (int j = 0; j < layer_size; j++)
         {
 
@@ -471,16 +460,16 @@ void feedBackward(Neural_Network *net)
 
             for (int k = 0; k < outputs; k++)
             {
-                bias_error += net->array_outputs[k].weights[j] * net->array_outputs[k].bias_error;
+                bias_error += net->array_outputs[k].weights[j] * net->array_outputs[k].bias_error[x];
             }
 
             bias_error = bias_error * sigmoidDerivative(net->array_inputs[j].weighted_sum);
 
-            net->array_inputs[j].bias_error = bias_error;
+            net->array_inputs[j].bias_error[x] = bias_error;
 
             for (int k = 0; k < inputs; k++)
             {
-                net->array_inputs[j].weights_error[k] = net->array_inputs[j].bias_error * net->array_sensors[k].activation;
+                net->array_inputs[j].weights_error[k][x] = net->array_inputs[j].bias_error[x] * net->array_sensors[k].activation;
             }
         }
     }
@@ -491,51 +480,61 @@ void feedBackward(Neural_Network *net)
  *
  *  @param Neural_Network *net
  */
-void propagate(Neural_Network *net)
+void propagate(Neural_Network *net, int x)
 {
     // Forward pass
     feedForward(net);
 
     // Backward pass
-    feedBackward(net);
+    feedBackward(net, x);
 }
 
 /*
- *  This performs Stochastic Gradient Descent on the network
+ *  This function updates the weights and biases
  *
  *  @param Neural_Network *net
  */
-void stochasticGradientDescent(Neural_Network *net)
+void update(Neural_Network *net)
 {
-    // Error values
-    float input_error[layer_size];
-    float hidden_error[layers][layer_size];
-    float output_error[outputs];
+    // Calculate averages
+    float average_input_bias[layer_size];
+    float average_hidden_bias[layers][layer_size];
+    float average_output_bias[outputs];
 
-    // Set input bias_error to 0
+    float average_input_weights[layer_size][inputs];
+    float average_hidden_weights[layers][layer_size][layer_size];
+    float average_output_weights[outputs][layer_size];
+
+    // Inputs
     for (int j = 0; j < layer_size; j++)
     {
-        input_error[j] = 0;
     }
 
-    // Set hidden bias_error to 0
+    // Hidden
     if (layers)
     {
         for (int l = 0; l < layers; l++)
         {
             for (int j = 0; j < layer_size; j++)
             {
-                hidden_error[l][j] = 0;
             }
         }
     }
 
-    // Set output bias_error to 0
+    // Outputs
     for (int j = 0; j < outputs; j++)
     {
-        output_error[j] = 0;
     }
+}
 
+/*
+ *  This function performs Stochastic Gradient Descent on the network
+ *  It is the learning algorithm
+ *
+ *  @param Neural_Network *net
+ */
+void stochasticGradientDescent(Neural_Network *net)
+{
     // for each epoch
     for (int e = 0; e < max_epochs; e++)
     {
@@ -549,67 +548,11 @@ void stochasticGradientDescent(Neural_Network *net)
                 setInput(net, train_label, (b * batch_size) + x + 1, 0);
 
                 // Propagate values through network
-                propagate(net);
-
-                // Sum errors
-                for (int j = 0; j < layer_size; j++)
-                {
-                    input_error[j] += net->array_inputs[j].bias_error;
-                }
-
-                if (layers)
-                {
-                    for (int l = 0; l < layers; l++)
-                    {
-                        for (int j = 0; j < layer_size; j++)
-                        {
-                            hidden_error[l][j] += net->array_hidden[l][j].bias_error;
-                        }
-                    }
-                }
-
-                for (int j = 0; j < outputs; j++)
-                {
-                    output_error[j] += net->array_outputs[j].bias_error;
-                }
+                propagate(net, x);
             }
-        }
 
-        // Calculate average
-        for (int j = 0; j < layer_size; j++)
-        {
-            input_error[j] = input_error[j] / batch_size;
-        }
-
-        if (layers)
-        {
-            for (int l = 0; l < layers; l++)
-            {
-                for (int j = 0; j < layer_size; j++)
-                {
-                    hidden_error[l][j] = hidden_error[l][j] / batch_size;
-                }
-            }
-        }
-
-        for (int j = 0; j < outputs; j++)
-        {
-            output_error[j] = output_error[j] / batch_size;
-        }
-
-        // Update weights and biases
-        for (int j = 0; j < layer_size; j++)
-        {
-            net->array_inputs[j].bias = net->array_inputs[j].bias - (learning * input_error[j]);
-
-            for (int k = 0; k < inputs; k++)
-            {
-                net->array_inputs[j].weights[k] = net->array_inputs[j].weights[k] - (learning * input_error[j] * net->array_sensors[k].activation);
-            }
-        }
-
-        if (layers)
-        {
+            // Update parameters
+            update(net);
         }
     }
 }
