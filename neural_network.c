@@ -349,6 +349,29 @@ void feedForward(Neural_Network *net)
 }
 
 /*
+ *  This function calculates the network prediction
+ *
+ *  @param Neural_Network *net
+ */
+void setPrediction(Neural_Network *net)
+{
+    float max = net->array_outputs[0].activation;
+
+    int prediction = 0;
+
+    for (int j = 0; j < outputs; j++)
+    {
+        if (net->array_outputs[j].activation > max)
+        {
+            max = net->array_outputs[j].activation;
+            prediction = j;
+        }
+    }
+
+    net->prediction = prediction;
+}
+
+/*
  *  This function propagates backward the error on all neurons in the network
  *  (error[l] = (weights[l+1] * error[l+1]) * derivativeOfActivation(weighted_sum[l])
  *
@@ -474,20 +497,6 @@ void feedBackward(Neural_Network *net, int x)
             }
         }
     }
-}
-
-/*
- *  This function propagates values through the network
- *
- *  @param Neural_Network *net
- */
-void propagate(Neural_Network *net, int x)
-{
-    // Forward pass
-    feedForward(net);
-
-    // Backward pass
-    feedBackward(net, x);
 }
 
 /*
@@ -649,14 +658,49 @@ void stochasticGradientDescent(Neural_Network *net)
                 // Set Activation of input neurons
                 setInput(net, train_label, (b * batch_size) + x + 1, 0);
 
-                // Propagate values through network
-                propagate(net, x);
+                // Forward pass
+                feedForward(net);
+
+                // Backward pass
+                feedBackward(net, x);
             }
 
             // Update parameters
             update(net);
         }
     }
+}
+
+/*
+ *  This function tests how good the network is on the testing data
+ *
+ *  @param Neural_Network *net
+ */
+void score(Neural_Network *net)
+{
+    int correct = 0;
+
+    for (int x = 0; x < testing; x++)
+    {
+        // Set Activation of input neurons
+        setInput(net, train_label, x + 1, 1);
+
+        // Propagate values forward
+        feedForward(net);
+
+        // Check prediction
+        setPrediction(net);
+
+        if (net->prediction == net->label)
+        {
+            correct++;
+        }
+    }
+
+    float precision = correct / testing;
+
+    printf("Number of examples correctly classified: %d\n", correct);
+    printf("Neural Network precision: %.2f%%\n", precision);
 }
 
 /*
@@ -707,6 +751,9 @@ int main(int argc, char const *argv[])
         // Randomize the Neural Network
         randomize(&smarty_pants);
 
+        // Stochastic Gradient Descent
+        stochasticGradientDescent(&smarty_pants);
+
         // Save the Neural Network
         save(&smarty_pants, "smarty_pants.bin");
     }
@@ -716,9 +763,9 @@ int main(int argc, char const *argv[])
         load(&smarty_pants, argv[1]);
     }
 
-    // Stochastic Gradient Descent
-    stochasticGradientDescent(&smarty_pants);
-
-    // Save the Neural Network
-    save(&smarty_pants, "smarty_pants.bin");
+    if (argc <= 2)
+    {
+        // Test Neural Network
+        score(&smarty_pants);
+    }
 }
