@@ -685,7 +685,7 @@ void score(Neural_Network *net)
     for (int x = 0; x < testing; x++)
     {
         // Set Activation of input neurons
-        setInput(net, train_label, x + 1, 1);
+        setInput(net, test_label, x + 1, 1);
 
         // Propagate values forward
         feedForward(net);
@@ -699,9 +699,9 @@ void score(Neural_Network *net)
         }
     }
 
-    float precision = correct / testing;
+    float precision = ((float)correct / (float)testing) * 100;
 
-    printf("Number of examples correctly classified: %d\n", correct);
+    printf("Number of examples correctly classified: %d out of %d\n", correct, testing);
     printf("Neural Network precision: %.2f%%\n", precision);
 }
 
