@@ -299,7 +299,7 @@ void feedForward(Neural_Network *net)
 
                 for (int k = 0; k < layer_size; k++)
                 {
-                    sum += net->array_inputs[k].weighted_sum * net->array_hidden[l][j].weights[k];
+                    sum += net->array_inputs[k].activation * net->array_hidden[l][j].weights[k];
                 }
 
                 sum += net->array_hidden[l][j].bias;
@@ -317,7 +317,7 @@ void feedForward(Neural_Network *net)
 
             for (int k = 0; k < layer_size; k++)
             {
-                sum += net->array_hidden[layers - 1][k].weighted_sum * net->array_outputs[j].weights[k];
+                sum += net->array_hidden[layers - 1][k].activation * net->array_outputs[j].weights[k];
             }
 
             sum += net->array_outputs[j].bias;
@@ -336,7 +336,7 @@ void feedForward(Neural_Network *net)
 
             for (int k = 0; k < layer_size; k++)
             {
-                sum += net->array_inputs[k].weighted_sum * net->array_outputs[j].weights[k];
+                sum += net->array_inputs[k].activation * net->array_outputs[j].weights[k];
             }
 
             sum += net->array_outputs[j].bias;
@@ -359,7 +359,7 @@ void setPrediction(Neural_Network *net)
 
     int prediction = 0;
 
-    for (int j = 0; j < outputs; j++)
+    for (int j = 1; j < outputs; j++)
     {
         if (net->array_outputs[j].activation > max)
         {
@@ -600,7 +600,7 @@ void update(Neural_Network *net)
         }
     }
 
-    // Adjust parameters
+    // Adjust inputs
     for (int j = 0; j < layer_size; j++)
     {
         net->array_inputs[j].bias = net->array_inputs[j].bias - (learning * average_input_bias[j]);
@@ -611,6 +611,7 @@ void update(Neural_Network *net)
         }
     }
 
+    // Adjust hidden
     if (layers)
     {
         for (int l = 0; l < layers; l++)
@@ -627,6 +628,7 @@ void update(Neural_Network *net)
         }
     }
 
+    // Adjust outputs
     for (int j = 0; j < outputs; j++)
     {
         net->array_outputs[j].bias = net->array_outputs[j].bias - (learning * average_output_bias[j]);
