@@ -5,9 +5,9 @@
     
     compilation: gcc neural_network.c -o neural_network.exe -lm
     
-    usage: ./neural_network.exe
-    usage: ./neural_network.exe [neural_network.bin]
-    usage: ./neural_network.exe [neural_network.bin] [...]
+    usage: ./neural_network.exe                             // Creates new network, trains, and tests it on all test images
+    usage: ./neural_network.exe [neural_network.bin]        // Uses specified network, and tests it on all test images
+    usage: ./neural_network.exe [neural_network.bin] [...]  // Uses specified network, and tests specified test images
     
     author: Joao Fraga
     e-mail: joaoluisfreirefraga@gmail.com
@@ -56,8 +56,8 @@
 #define batch_size 100                         // number of examples per batch
 #define train_sessions (training / batch_size) // number of training sessions per epoch
 
-#define max_epochs 5               // maximum number of epochs
-#define learning 0.15 / batch_size // learning rate
+#define max_epochs 500             // maximum number of epochs
+#define learning 0.25 / batch_size // learning rate
 
 /************** 
  * Structures *
@@ -160,7 +160,7 @@ void randomize(Neural_Network *net)
     // Make randomizer seed
     srand((unsigned int)time(NULL));
 
-    // Randomize sensor neurons weights and biases
+    // Randomize input neurons weights and biases
     for (int j = 0; j < layer_size; j++)
     {
         net->array_inputs[j].bias = randomizedFloat(min_bias, max_bias);
@@ -172,15 +172,18 @@ void randomize(Neural_Network *net)
     }
 
     // Randomize hidden layer neurons weights and biases
-    for (int l = 0; l < layers; l++)
+    if (layers)
     {
-        for (int j = 0; j < layer_size; j++)
+        for (int l = 0; l < layers; l++)
         {
-            net->array_hidden[l][j].bias = randomizedFloat(min_bias, max_bias);
-
-            for (int k = 0; k < layer_size; k++)
+            for (int j = 0; j < layer_size; j++)
             {
-                net->array_hidden[l][j].weights[k] = randomizedFloat(min_weight, max_weight);
+                net->array_hidden[l][j].bias = randomizedFloat(min_bias, max_bias);
+
+                for (int k = 0; k < layer_size; k++)
+                {
+                    net->array_hidden[l][j].weights[k] = randomizedFloat(min_weight, max_weight);
+                }
             }
         }
     }
@@ -297,9 +300,20 @@ void feedForward(Neural_Network *net)
             {
                 sum = 0;
 
-                for (int k = 0; k < layer_size; k++)
+                if (l == 0)
                 {
-                    sum += net->array_inputs[k].activation * net->array_hidden[l][j].weights[k];
+
+                    for (int k = 0; k < layer_size; k++)
+                    {
+                        sum += net->array_inputs[k].activation * net->array_hidden[l][j].weights[k];
+                    }
+                }
+                else
+                {
+                    for (int k = 0; k < layer_size; k++)
+                    {
+                        sum += net->array_hidden[l - 1][k].activation * net->array_hidden[l][j].weights[k];
+                    }
                 }
 
                 sum += net->array_hidden[l][j].bias;
@@ -392,23 +406,25 @@ void feedBackward(Neural_Network *net, int x)
             net->array_outputs[j].bias_error[x] = (net->array_outputs[j].activation - 0.0) * sigmoidDerivative(net->array_outputs[j].weighted_sum);
         }
 
-        for (int k = 0; k < layer_size; k++)
+        if (layers)
         {
-            if (layers)
+            for (int k = 0; k < layer_size; k++)
             {
                 net->array_outputs[j].weights_error[k][x] = net->array_outputs[j].bias_error[x] * net->array_hidden[layers - 1][k].activation;
             }
-            else
+        }
+        else
+        {
+            for (int k = 0; k < layer_size; k++)
             {
                 net->array_outputs[j].weights_error[k][x] = net->array_outputs[j].bias_error[x] * net->array_inputs[k].activation;
             }
         }
     }
 
+    // Calculate hidden layer neurons error
     if (layers)
     {
-
-        // Calculate hidden layer neurons error
         for (int l = layers - 1; l >= 0; l--)
         {
             for (int j = 0; j < layer_size; j++)
@@ -440,13 +456,16 @@ void feedBackward(Neural_Network *net, int x)
                     net->array_hidden[l][j].bias_error[x] = bias_error;
                 }
 
-                for (int k = 0; k < layer_size; k++)
+                if (l == 0)
                 {
-                    if (l == 0)
+                    for (int k = 0; k < layer_size; k++)
                     {
                         net->array_hidden[l][j].weights_error[k][x] = net->array_hidden[l][j].bias_error[x] * net->array_inputs[k].activation;
                     }
-                    else
+                }
+                else
+                {
+                    for (int k = 0; k < layer_size; k++)
                     {
                         net->array_hidden[l][j].weights_error[k][x] = net->array_hidden[l][j].bias_error[x] * net->array_hidden[l - 1][k].activation;
                     }
@@ -655,10 +674,10 @@ void stochasticGradientDescent(Neural_Network *net)
         for (int b = 0; b < train_sessions; b++)
         {
             // for each example in batch
-            for (int x = 0; x < batch_size; x++)
+            for (int x = 1; x <= batch_size; x++)
             {
                 // Set Activation of input neurons
-                setInput(net, train_label, (b * batch_size) + x + 1, 0);
+                setInput(net, train_label, (b * batch_size) + x, 0);
 
                 // Forward pass
                 feedForward(net);
@@ -682,10 +701,10 @@ void score(Neural_Network *net)
 {
     int correct = 0;
 
-    for (int x = 0; x < testing; x++)
+    for (int x = 1; x <= testing; x++)
     {
         // Set Activation of input neurons
-        setInput(net, test_label, x + 1, 1);
+        setInput(net, test_label, x, 1);
 
         // Propagate values forward
         feedForward(net);
@@ -703,6 +722,23 @@ void score(Neural_Network *net)
 
     printf("Number of examples correctly classified: %d out of %d\n", correct, testing);
     printf("Neural Network precision: %.2f%%\n", precision);
+}
+
+void testImages(Neural_Network *net, int argc, char const *argv[])
+{
+    for (int i = 2; i < argc; i++)
+    {
+        // Set Activation of input neurons
+        setInput(net, test_label, argv[i], 1);
+
+        // Propagate values forward
+        feedForward(net);
+
+        // Check prediction
+        setPrediction(net);
+
+        printf("Neural Network prediction of image[%05d]: %d (correct label is: %d)\n", argv[i], net->prediction, net->label);
+    }
 }
 
 /*
@@ -770,4 +806,11 @@ int main(int argc, char const *argv[])
         // Test Neural Network
         score(&smarty_pants);
     }
+    else
+    {
+        // Test Specific Images
+        testImages(&smarty_pants, argc, argv);
+    }
+
+    return 0;
 }
