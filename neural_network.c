@@ -118,25 +118,25 @@ typedef struct
  ************************/
 
 /*
- * The sigmoid function
+ * The activation function
  *
  * @param float x
- * @return float sigmoid
+ * @return float activation
  */
-float sigmoid(float x)
+float activation(float x)
 {
     return 1.0 / (1.0 + expf(-x));
 }
 
 /*
- * The sigmoid derivative function
+ * The activation derivative function
  *
  * @param float x
- * @return float sigmoid
+ * @return float activation
  */
-float sigmoidDerivative(float x)
+float activationDerivative(float x)
 {
-    return sigmoid(x) * (1 - sigmoid(x));
+    return activation(x) * (1 - activation(x));
 }
 
 /*
@@ -287,7 +287,7 @@ void feedForward(Neural_Network *net)
 
         net->array_inputs[j].weighted_sum = sum;
 
-        net->array_inputs[j].activation = sigmoid(sum);
+        net->array_inputs[j].activation = activation(sum);
     }
 
     if (layers)
@@ -320,7 +320,7 @@ void feedForward(Neural_Network *net)
 
                 net->array_hidden[l][j].weighted_sum = sum;
 
-                net->array_hidden[l][j].activation = sigmoid(sum);
+                net->array_hidden[l][j].activation = activation(sum);
             }
         }
 
@@ -338,7 +338,7 @@ void feedForward(Neural_Network *net)
 
             net->array_outputs[j].weighted_sum = sum;
 
-            net->array_outputs[j].activation = sigmoid(sum);
+            net->array_outputs[j].activation = activation(sum);
         }
     }
     else
@@ -357,7 +357,7 @@ void feedForward(Neural_Network *net)
 
             net->array_outputs[j].weighted_sum = sum;
 
-            net->array_outputs[j].activation = sigmoid(sum);
+            net->array_outputs[j].activation = activation(sum);
         }
     }
 }
@@ -399,11 +399,11 @@ void feedBackward(Neural_Network *net, int x)
     {
         if (j == net->label)
         {
-            net->array_outputs[j].bias_error[x] = (net->array_outputs[j].activation - 1.0) * sigmoidDerivative(net->array_outputs[j].weighted_sum);
+            net->array_outputs[j].bias_error[x] = (net->array_outputs[j].activation - 1.0) * activationDerivative(net->array_outputs[j].weighted_sum);
         }
         else
         {
-            net->array_outputs[j].bias_error[x] = (net->array_outputs[j].activation - 0.0) * sigmoidDerivative(net->array_outputs[j].weighted_sum);
+            net->array_outputs[j].bias_error[x] = (net->array_outputs[j].activation - 0.0) * activationDerivative(net->array_outputs[j].weighted_sum);
         }
 
         if (layers)
@@ -439,7 +439,7 @@ void feedBackward(Neural_Network *net, int x)
                         bias_error += net->array_outputs[k].weights[j] * net->array_outputs[k].bias_error[x];
                     }
 
-                    bias_error = bias_error * sigmoidDerivative(net->array_hidden[l][j].weighted_sum);
+                    bias_error = bias_error * activationDerivative(net->array_hidden[l][j].weighted_sum);
 
                     net->array_hidden[l][j].bias_error[x] = bias_error;
                 }
@@ -451,7 +451,7 @@ void feedBackward(Neural_Network *net, int x)
                         bias_error += net->array_hidden[l + 1][k].weights[j] * net->array_hidden[l + 1][k].bias_error[x];
                     }
 
-                    bias_error = bias_error * sigmoidDerivative(net->array_hidden[l][j].weighted_sum);
+                    bias_error = bias_error * activationDerivative(net->array_hidden[l][j].weighted_sum);
 
                     net->array_hidden[l][j].bias_error[x] = bias_error;
                 }
@@ -483,7 +483,7 @@ void feedBackward(Neural_Network *net, int x)
                 bias_error += net->array_hidden[0][k].weights[j] * net->array_hidden[0][k].bias_error[x];
             }
 
-            bias_error = bias_error * sigmoidDerivative(net->array_inputs[j].weighted_sum);
+            bias_error = bias_error * activationDerivative(net->array_inputs[j].weighted_sum);
 
             net->array_inputs[j].bias_error[x] = bias_error;
 
@@ -506,7 +506,7 @@ void feedBackward(Neural_Network *net, int x)
                 bias_error += net->array_outputs[k].weights[j] * net->array_outputs[k].bias_error[x];
             }
 
-            bias_error = bias_error * sigmoidDerivative(net->array_inputs[j].weighted_sum);
+            bias_error = bias_error * activationDerivative(net->array_inputs[j].weighted_sum);
 
             net->array_inputs[j].bias_error[x] = bias_error;
 
@@ -660,39 +660,6 @@ void update(Neural_Network *net)
 }
 
 /*
- *  This function performs Stochastic Gradient Descent on the network
- *  It is the learning algorithm
- *
- *  @param Neural_Network *net
- */
-void stochasticGradientDescent(Neural_Network *net)
-{
-    // for each epoch
-    for (int e = 0; e < max_epochs; e++)
-    {
-        // for each batch in epoch
-        for (int b = 0; b < train_sessions; b++)
-        {
-            // for each example in batch
-            for (int x = 1; x <= batch_size; x++)
-            {
-                // Set Activation of input neurons
-                setInput(net, train_label, (b * batch_size) + x, 0);
-
-                // Forward pass
-                feedForward(net);
-
-                // Backward pass
-                feedBackward(net, x);
-            }
-
-            // Update parameters
-            update(net);
-        }
-    }
-}
-
-/*
  *  This function tests how good the network is on the testing data
  *
  *  @param Neural_Network *net
@@ -724,7 +691,12 @@ void score(Neural_Network *net)
     printf("Neural Network precision: %.2f%%\n", precision);
 }
 
-void testImages(Neural_Network *net, int argc, char const *argv[])
+/*
+ *  This function classifies specific images
+ *
+ *  @param Neural_Network *net
+ */
+void scoreImages(Neural_Network *net, int argc, char const *argv[])
 {
     for (int i = 2; i < argc; i++)
     {
@@ -738,6 +710,44 @@ void testImages(Neural_Network *net, int argc, char const *argv[])
         setPrediction(net);
 
         printf("Neural Network prediction of image[%05d]: %d (correct label is: %d)\n", atoi(argv[i]), net->prediction, net->label);
+    }
+}
+
+/*
+ *  This function performs Stochastic Gradient Descent on the network
+ *  It is the learning algorithm
+ *
+ *  @param Neural_Network *net
+ */
+void stochasticGradientDescent(Neural_Network *net)
+{
+    // for each epoch
+    for (int e = 0; e < max_epochs; e++)
+    {
+
+        // for each batch in epoch
+        for (int b = 0; b < train_sessions; b++)
+        {
+            // for each example in batch
+            for (int x = 1; x <= batch_size; x++)
+            {
+                // Set Activation of input neurons
+                setInput(net, train_label, (b * batch_size) + x, 0);
+
+                // Forward pass
+                feedForward(net);
+
+                // Backward pass
+                feedBackward(net, x);
+            }
+
+            // Update parameters
+            update(net);
+        }
+
+        printf("========================= End of epoch %03d =========================\n", e);
+        score(net);
+        printf("====================================================================\n");
     }
 }
 
@@ -809,7 +819,7 @@ int main(int argc, char const *argv[])
     else
     {
         // Test Specific Images
-        testImages(&smarty_pants, argc, argv);
+        scoreImages(&smarty_pants, argc, argv);
     }
 
     return 0;
