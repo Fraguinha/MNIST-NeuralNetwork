@@ -47,11 +47,8 @@
 #define layers 0                               // number of hidden layers
 #define layer_size_h (layers ? layer_size : 0) // number of hidden layer neurons
 
-#define min_weight -2 // minimum value for the weights
-#define max_weight +2 // maximum value for the weights
-
-#define min_bias -1 // maximum value for the bias
-#define max_bias +1 // maximum value for the bias
+#define min_weight -0.1 // minimum weight
+#define max_weight +0.1 // maximum weight
 
 #define batch_size 100                         // number of examples per batch
 #define train_sessions (training / batch_size) // number of training sessions per epoch
@@ -147,7 +144,14 @@ float activationDerivative(float x)
  */
 float randomizedFloat(float minimum, float maximum)
 {
-    return (((float)rand()) / (float)(RAND_MAX)) * (maximum - minimum) + minimum;
+    float random = 0;
+
+    while (random == 0)
+    {
+        random = (((float)rand()) / (float)(RAND_MAX)) * (maximum - minimum) + minimum;
+    }
+
+    return random;
 }
 
 /*
@@ -163,7 +167,7 @@ void randomize(Neural_Network *net)
     // Randomize input neurons weights and biases
     for (int j = 0; j < layer_size; j++)
     {
-        net->array_inputs[j].bias = randomizedFloat(min_bias, max_bias);
+        net->array_inputs[j].bias = 0;
 
         for (int k = 0; k < inputs; k++)
         {
@@ -178,7 +182,7 @@ void randomize(Neural_Network *net)
         {
             for (int j = 0; j < layer_size; j++)
             {
-                net->array_hidden[l][j].bias = randomizedFloat(min_bias, max_bias);
+                net->array_hidden[l][j].bias = 0;
 
                 for (int k = 0; k < layer_size; k++)
                 {
@@ -191,7 +195,7 @@ void randomize(Neural_Network *net)
     // Randomize output neurons weights and biases
     for (int j = 0; j < outputs; j++)
     {
-        net->array_outputs[j].bias = randomizedFloat(min_bias, max_bias);
+        net->array_outputs[j].bias = 0;
 
         for (int k = 0; k < layer_size; k++)
         {
@@ -687,8 +691,8 @@ void score(Neural_Network *net)
 
     float precision = ((float)correct / (float)testing) * 100;
 
-    printf("Number of examples correctly classified: %d out of %d\n", correct, testing);
-    printf("Neural Network precision: %.2f%%\n", precision);
+    printf("  Number of examples correctly classified: %d out of %d\n", correct, testing);
+    printf("  Neural Network precision: %.2f%%\n", precision);
 }
 
 /*
@@ -709,7 +713,7 @@ void scoreImages(Neural_Network *net, int argc, char const *argv[])
         // Check prediction
         setPrediction(net);
 
-        printf("Neural Network prediction of image[%05d]: %d (correct label is: %d)\n", atoi(argv[i]), net->prediction, net->label);
+        printf("  Neural Network prediction of image[%05d]: %d (correct label is: %d)\n", atoi(argv[i]), net->prediction, net->label);
     }
 }
 
@@ -722,7 +726,7 @@ void scoreImages(Neural_Network *net, int argc, char const *argv[])
 void stochasticGradientDescent(Neural_Network *net)
 {
     // for each epoch
-    for (int e = 0; e < max_epochs; e++)
+    for (int e = 1; e <= max_epochs; e++)
     {
 
         // for each batch in epoch
@@ -747,7 +751,6 @@ void stochasticGradientDescent(Neural_Network *net)
 
         printf("========================= End of epoch %03d =========================\n", e);
         score(net);
-        printf("====================================================================\n");
     }
 }
 
