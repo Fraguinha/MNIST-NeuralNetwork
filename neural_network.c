@@ -729,7 +729,7 @@ void testImages(Neural_Network *net, int argc, char const *argv[])
     for (int i = 2; i < argc; i++)
     {
         // Set Activation of input neurons
-        setInput(net, test_label, argv[i], 1);
+        setInput(net, test_label, atoi(argv[i]), 1);
 
         // Propagate values forward
         feedForward(net);
@@ -737,7 +737,7 @@ void testImages(Neural_Network *net, int argc, char const *argv[])
         // Check prediction
         setPrediction(net);
 
-        printf("Neural Network prediction of image[%05d]: %d (correct label is: %d)\n", argv[i], net->prediction, net->label);
+        printf("Neural Network prediction of image[%05d]: %d (correct label is: %d)\n", atoi(argv[i]), net->prediction, net->label);
     }
 }
 
