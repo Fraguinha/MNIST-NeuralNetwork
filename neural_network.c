@@ -53,8 +53,8 @@
 #define batch_size 100                         // number of examples per batch
 #define train_sessions (training / batch_size) // number of training sessions per epoch
 
-#define max_epochs 500             // maximum number of epochs
-#define learning 0.25 / batch_size // learning rate
+#define max_epochs 500            // maximum number of epochs
+#define learning 0.5 / batch_size // learning rate
 
 /************** 
  * Structures *
