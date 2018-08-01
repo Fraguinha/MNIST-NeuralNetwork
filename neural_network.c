@@ -304,6 +304,117 @@ void setInput(Neural_Network *net, const char *labelInfo, int number, int flag)
 }
 
 /*
+ *  This function calculates the network prediction
+ *
+ *  @param Neural_Network *net
+ */
+void setPrediction(Neural_Network *net)
+{
+    float max = net->array_outputs[0].activation;
+
+    int prediction = 0;
+
+    for (int j = 1; j < outputs; j++)
+    {
+        if (net->array_outputs[j].activation > max)
+        {
+            max = net->array_outputs[j].activation;
+            prediction = j;
+        }
+    }
+
+    net->prediction = prediction;
+}
+
+/*
+ *  This function tests how good the network is on the testing data
+ *
+ *  @param Neural_Network *net
+ */
+void score(Neural_Network *net)
+{
+    int correct = 0;
+
+    for (int x = 1; x <= testing; x++)
+    {
+        // Set Activation of input neurons
+        setInput(net, test_label, x, 1);
+
+        // Propagate values forward
+        feedForward(net);
+
+        // Check prediction
+        setPrediction(net);
+
+        if (net->prediction == net->label)
+        {
+            correct++;
+        }
+    }
+
+    float precision = ((float)correct / (float)testing) * 100;
+
+    printf("Neural Network score: %d / %d (%.2f%%)\n", correct, testing, precision);
+}
+
+/*
+ *  This function classifies specific images
+ *
+ *  @param Neural_Network *net
+ */
+void scoreImages(Neural_Network *net, int argc, char const *argv[])
+{
+    for (int i = 2; i < argc; i++)
+    {
+        // Set Activation of input neurons
+        setInput(net, test_label, atoi(argv[i]), 1);
+
+        // Propagate values forward
+        feedForward(net);
+
+        // Check prediction
+        setPrediction(net);
+
+        // Print result
+        printf("Neural Network prediction of image[%05d]: %d (%d is correct label)\n", atoi(argv[i]), net->prediction, net->label);
+    }
+}
+
+/*
+ *  This functions saves the network to a binary file
+ *
+ *  @param Neural_Network *net, const char *filename
+ */
+void save(Neural_Network *net, const char *filename)
+{
+    FILE *fp = fopen(filename, "wb");
+
+    if (fp != NULL)
+    {
+        fwrite(net, sizeof(Neural_Network), 1, fp);
+    }
+
+    fclose(fp);
+}
+
+/*
+ *  This functions loads the network from a binary file
+ *
+ *  @param Neural_Network *net, const char *filename
+ */
+void load(Neural_Network *net, const char *filename)
+{
+    FILE *fp = fopen(filename, "rb");
+
+    if (fp != NULL)
+    {
+        fread(net, sizeof(Neural_Network), 1, fp);
+    }
+
+    fclose(fp);
+}
+
+/*
  *  This functions calculates the activation of all the neurons in the network
  *  activation[l] = sigmoid( weighted sum[l] ) => sigmoid( sum( weights[l] * activations[l-1] ) - bias[l] ) )
  *
@@ -398,29 +509,6 @@ void feedForward(Neural_Network *net)
             net->array_outputs[j].activation = activation(sum);
         }
     }
-}
-
-/*
- *  This function calculates the network prediction
- *
- *  @param Neural_Network *net
- */
-void setPrediction(Neural_Network *net)
-{
-    float max = net->array_outputs[0].activation;
-
-    int prediction = 0;
-
-    for (int j = 1; j < outputs; j++)
-    {
-        if (net->array_outputs[j].activation > max)
-        {
-            max = net->array_outputs[j].activation;
-            prediction = j;
-        }
-    }
-
-    net->prediction = prediction;
 }
 
 /*
@@ -606,94 +694,6 @@ void update(Neural_Network *net)
             }
         }
     }
-}
-
-/*
- *  This function tests how good the network is on the testing data
- *
- *  @param Neural_Network *net
- */
-void score(Neural_Network *net)
-{
-    int correct = 0;
-
-    for (int x = 1; x <= testing; x++)
-    {
-        // Set Activation of input neurons
-        setInput(net, test_label, x, 1);
-
-        // Propagate values forward
-        feedForward(net);
-
-        // Check prediction
-        setPrediction(net);
-
-        if (net->prediction == net->label)
-        {
-            correct++;
-        }
-    }
-
-    float precision = ((float)correct / (float)testing) * 100;
-
-    printf("Neural Network score: %d / %d (%.2f%%)\n", correct, testing, precision);
-}
-
-/*
- *  This function classifies specific images
- *
- *  @param Neural_Network *net
- */
-void scoreImages(Neural_Network *net, int argc, char const *argv[])
-{
-    for (int i = 2; i < argc; i++)
-    {
-        // Set Activation of input neurons
-        setInput(net, test_label, atoi(argv[i]), 1);
-
-        // Propagate values forward
-        feedForward(net);
-
-        // Check prediction
-        setPrediction(net);
-
-        // Print result
-        printf("Neural Network prediction of image[%05d]: %d (%d is correct label)\n", atoi(argv[i]), net->prediction, net->label);
-    }
-}
-
-/*
- *  This functions saves the network to a binary file
- *
- *  @param Neural_Network *net, const char *filename
- */
-void save(Neural_Network *net, const char *filename)
-{
-    FILE *fp = fopen(filename, "wb");
-
-    if (fp != NULL)
-    {
-        fwrite(net, sizeof(Neural_Network), 1, fp);
-    }
-
-    fclose(fp);
-}
-
-/*
- *  This functions loads the network from a binary file
- *
- *  @param Neural_Network *net, const char *filename
- */
-void load(Neural_Network *net, const char *filename)
-{
-    FILE *fp = fopen(filename, "rb");
-
-    if (fp != NULL)
-    {
-        fread(net, sizeof(Neural_Network), 1, fp);
-    }
-
-    fclose(fp);
 }
 
 /*
