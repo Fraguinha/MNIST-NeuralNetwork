@@ -47,11 +47,11 @@
 #define layers 0                               // number of hidden layers
 #define layer_size_h (layers ? layer_size : 0) // number of hidden layer neurons
 
-#define max_epochs 30 // maximum number of epochs
-#define learning 3.0  // how much to adjust
-
 #define batch_size 10                          // number of examples per batch
 #define train_sessions (training / batch_size) // number of training sessions per epoch
+
+#define max_epochs 30             // maximum number of epochs
+#define learning 3.0 / batch_size // how much to adjust
 
 /************** 
  * Structures *
@@ -130,31 +130,37 @@ float activation(float x)
  */
 float activationDerivative(float x)
 {
-    return activation(x) * (1 - activation(x));
+    return activation(x) * (1.0 - activation(x));
 }
 
 /*
  *  This function generates a random float
  *
  *  @param float minimum, float maximum
- *  @return float random
+ *  @return float
  */
 float randomizedFloat(float minimum, float maximum)
 {
     return (((float)rand()) / (float)(RAND_MAX)) * (maximum - minimum) + minimum;
 }
 
-float standardDeviation(float mean, float deviation)
+/*
+ *  This function generates random floats with mean and variation
+ * 
+ *  @param float mean, float maximum
+ *  @return float
+ */
+float normalDistribution(float mean, float variation)
 {
-    static int use_last = 0;
-    static float y2;
+    static int flag = 0;
 
     float x1, x2, w, y1;
+    static float y2;
 
-    if (use_last)
+    if (flag)
     {
         y1 = y2;
-        use_last = 0;
+        flag = 0;
     }
     else
     {
@@ -172,10 +178,10 @@ float standardDeviation(float mean, float deviation)
         y1 = x1 * w;
         y2 = x2 * w;
 
-        use_last = 1;
+        flag = 1;
     }
 
-    return (mean + y1 * deviation);
+    return (mean + y1 * variation);
 }
 
 /*
@@ -183,28 +189,25 @@ float standardDeviation(float mean, float deviation)
  *
  *  @param Neural_Network *net
  */
-void randomize(Neural_Network *net, long int *seed)
+void randomize(Neural_Network *net)
 {
-    // Update randomizer seed
-    srand((unsigned int)time(seed));
+    // Make first randomizer
+    srand((unsigned int)time(NULL));
 
-    float temp;
+    // Make random seed
+    long int seed = rand();
+
+    // Update randomizer with seed
+    srand((unsigned int)time(&seed));
 
     // Randomize input neurons weights and biases
     for (int j = 0; j < layer_size; j++)
     {
-        net->array_inputs[j].bias = standardDeviation(0.0, 1.0);
+        net->array_inputs[j].bias = normalDistribution(0.0, 1.0);
 
         for (int k = 0; k < inputs; k++)
         {
-            temp = 0;
-
-            while (temp == 0)
-            {
-                temp = standardDeviation(0.0, 1.0);
-            }
-
-            net->array_inputs[j].weights[k] = temp;
+            net->array_inputs[j].weights[k] = normalDistribution(0.0, 1.0);
         }
     }
 
@@ -215,18 +218,11 @@ void randomize(Neural_Network *net, long int *seed)
         {
             for (int j = 0; j < layer_size; j++)
             {
-                net->array_hidden[l][j].bias = standardDeviation(0.0, 1.0);
+                net->array_hidden[l][j].bias = normalDistribution(0.0, 1.0);
 
                 for (int k = 0; k < layer_size; k++)
                 {
-                    temp = 0;
-
-                    while (temp == 0)
-                    {
-                        temp = standardDeviation(0.0, 1.0);
-                    }
-
-                    net->array_hidden[l][j].weights[k] = temp;
+                    net->array_hidden[l][j].weights[k] = normalDistribution(0.0, 1.0);
                 }
             }
         }
@@ -235,18 +231,11 @@ void randomize(Neural_Network *net, long int *seed)
     // Randomize output neurons weights and biases
     for (int j = 0; j < outputs; j++)
     {
-        net->array_outputs[j].bias = standardDeviation(0.0, 1.0);
+        net->array_outputs[j].bias = normalDistribution(0.0, 1.0);
 
         for (int k = 0; k < layer_size; k++)
         {
-            temp = 0;
-
-            while (temp == 0)
-            {
-                temp = standardDeviation(0.0, 1.0);
-            }
-
-            net->array_outputs[j].weights[k] = temp;
+            net->array_outputs[j].weights[k] = normalDistribution(0.0, 1.0);
         }
     }
 }
@@ -315,8 +304,8 @@ void setInput(Neural_Network *net, const char *labelInfo, int number, int flag)
 }
 
 /*
- *  This functions calculates the weighted sum of all the neurons in the network
- *  (weighted sum[l] = sum(weights[l] * activations[l-1]) - bias[l])
+ *  This functions calculates the activation of all the neurons in the network
+ *  activation[l] = sigmoid( weighted sum[l] ) => sigmoid( sum( weights[l] * activations[l-1] ) - bias[l] ) )
  *
  *  @param Neural_Network *net
  */
@@ -324,7 +313,7 @@ void feedForward(Neural_Network *net)
 {
     float sum;
 
-    // Calculate input neurons weighted sum
+    // Calculate input neurons activation
     for (int j = 0; j < layer_size; j++)
     {
         sum = 0.0;
@@ -343,8 +332,7 @@ void feedForward(Neural_Network *net)
 
     if (layers)
     {
-
-        // Calculate hidden layer neurons weighted sum
+        // Calculate hidden layer neurons activation
         for (int l = 0; l < layers; l++)
         {
             for (int j = 0; j < layer_size; j++)
@@ -353,7 +341,6 @@ void feedForward(Neural_Network *net)
 
                 if (l == 0)
                 {
-
                     for (int k = 0; k < layer_size; k++)
                     {
                         sum += net->array_inputs[k].activation * net->array_hidden[l][j].weights[k];
@@ -375,7 +362,7 @@ void feedForward(Neural_Network *net)
             }
         }
 
-        // Calculate output neurons weighted sum
+        // Calculate output neurons activation
         for (int j = 0; j < outputs; j++)
         {
             sum = 0.0;
@@ -394,7 +381,7 @@ void feedForward(Neural_Network *net)
     }
     else
     {
-        // Calculate output neurons weighted sum
+        // Calculate output neurons activation
         for (int j = 0; j < outputs; j++)
         {
             sum = 0.0;
@@ -444,7 +431,6 @@ void setPrediction(Neural_Network *net)
  */
 void feedBackward(Neural_Network *net, int x)
 {
-
     // Calculate output neurons error
     for (int j = 0; j < outputs; j++)
     {
@@ -547,7 +533,6 @@ void feedBackward(Neural_Network *net, int x)
         // Calculate input neurons error
         for (int j = 0; j < layer_size; j++)
         {
-
             float bias_error = 0.0;
 
             for (int k = 0; k < outputs; k++)
@@ -574,107 +559,17 @@ void feedBackward(Neural_Network *net, int x)
  */
 void update(Neural_Network *net)
 {
-    float average_input_bias[layer_size];
-    float average_input_weights[layer_size][inputs];
-
-    float average_hidden_bias[layers][layer_size];
-    float average_hidden_weights[layers][layer_size][layer_size];
-
-    float average_output_bias[outputs];
-    float average_output_weights[outputs][layer_size];
-
-    float sum_bias;
-    float sum_weights;
-
-    // Inputs
-    for (int j = 0; j < layer_size; j++)
-    {
-        sum_bias = 0.0;
-
-        for (int x = 0; x < batch_size; x++)
-        {
-            sum_bias += net->array_inputs[j].bias_error[x];
-        }
-
-        average_input_bias[j] = sum_bias / batch_size;
-
-        for (int k = 0; k < inputs; k++)
-        {
-            sum_weights = 0.0;
-
-            for (int x = 0; x < batch_size; x++)
-            {
-                sum_weights += net->array_inputs[j].weights_error[k][x];
-            }
-
-            average_input_weights[j][k] = sum_weights / batch_size;
-        }
-    }
-
-    // Hidden
-    if (layers)
-    {
-        for (int l = 0; l < layers; l++)
-        {
-            for (int j = 0; j < layer_size; j++)
-            {
-                sum_bias = 0.0;
-
-                for (int x = 0; x < batch_size; x++)
-                {
-                    sum_bias += net->array_hidden[l][j].bias_error[x];
-                }
-
-                average_hidden_bias[l][j] = sum_bias / batch_size;
-
-                for (int k = 0; k < layer_size; k++)
-                {
-                    sum_weights = 0.0;
-
-                    for (int x = 0; x < batch_size; x++)
-                    {
-                        sum_weights += net->array_hidden[l][j].weights_error[k][x];
-                    }
-
-                    average_hidden_weights[l][j][k] = sum_weights / batch_size;
-                }
-            }
-        }
-    }
-
-    // Outputs
-    for (int j = 0; j < outputs; j++)
-    {
-        sum_bias = 0.0;
-
-        for (int x = 0; x < batch_size; x++)
-        {
-            sum_bias += net->array_outputs[j].bias_error[x];
-        }
-
-        average_output_bias[j] = sum_bias / batch_size;
-
-        for (int k = 0; k < layer_size; k++)
-        {
-            sum_weights = 0.0;
-
-            for (int x = 0; x < batch_size; x++)
-            {
-                sum_weights += net->array_outputs[j].weights_error[k][x];
-            }
-
-            average_output_weights[j][k] = sum_weights / batch_size;
-        }
-    }
-
     // Adjust inputs
     for (int j = 0; j < layer_size; j++)
     {
-        net->array_inputs[j].bias = net->array_inputs[j].bias - (learning * average_input_bias[j]);
-
-        for (int k = 0; k < inputs; k++)
+        for (int x = 0; x < batch_size; x++)
         {
-            net->array_inputs[j].weights[k] = net->array_inputs[j].weights[k] - (learning * average_input_weights[j][k]);
+            net->array_inputs[j].bias = net->array_inputs[j].bias - (learning * net->array_inputs[j].bias_error[x]);
+
+            for (int k = 0; k < inputs; k++)
+            {
+                net->array_inputs[j].weights[k] = net->array_inputs[j].weights[k] - (learning * net->array_inputs[j].weights_error[k][x]);
+            }
         }
     }
 
@@ -685,11 +580,14 @@ void update(Neural_Network *net)
         {
             for (int j = 0; j < layer_size; j++)
             {
-                net->array_hidden[l][j].bias = net->array_hidden[l][j].bias - (learning * average_hidden_bias[l][j]);
-
-                for (int k = 0; k < layer_size; k++)
+                for (int x = 0; x < batch_size; x++)
                 {
-                    net->array_hidden[l][k].weights[k] = net->array_hidden[l][k].weights[k] - (learning * average_hidden_weights[l][j][k]);
+                    net->array_hidden[l][j].bias = net->array_hidden[l][j].bias - (learning * net->array_hidden[l][j].bias_error[x]);
+
+                    for (int k = 0; k < layer_size; k++)
+                    {
+                        net->array_hidden[l][k].weights[k] = net->array_hidden[l][k].weights[k] - (learning * net->array_hidden[l][j].weights_error[k][x]);
+                    }
                 }
             }
         }
@@ -698,11 +596,14 @@ void update(Neural_Network *net)
     // Adjust outputs
     for (int j = 0; j < outputs; j++)
     {
-        net->array_outputs[j].bias = net->array_outputs[j].bias - (learning * average_output_bias[j]);
-
-        for (int k = 0; k < layer_size; k++)
+        for (int x = 0; x < batch_size; x++)
         {
-            net->array_outputs[j].weights[k] = net->array_outputs[j].weights[k] - (learning * average_output_weights[j][k]);
+            net->array_outputs[j].bias = net->array_outputs[j].bias - (learning * net->array_outputs[j].bias_error[x]);
+
+            for (int k = 0; k < layer_size; k++)
+            {
+                net->array_outputs[j].weights[k] = net->array_outputs[j].weights[k] - (learning * net->array_outputs[j].weights_error[k][x]);
+            }
         }
     }
 }
@@ -803,11 +704,9 @@ void load(Neural_Network *net, const char *filename)
  */
 void stochasticGradientDescent(Neural_Network *net)
 {
-
     // for each epoch
     for (int e = 1; e <= max_epochs; e++)
     {
-
         // for each batch in epoch
         for (int b = 0; b < train_sessions; b++)
         {
@@ -850,14 +749,8 @@ int main(int argc, char const *argv[])
 
     if (argc == 1)
     {
-        // Make first randomizer
-        srand((unsigned int)time(NULL));
-
-        // Make random seed
-        long int seed = rand();
-
         // Randomize the Neural Network
-        randomize(&smarty_pants, &seed);
+        randomize(&smarty_pants);
 
         // Save the Neural Network
         save(&smarty_pants, "smarty_pants.bin");
