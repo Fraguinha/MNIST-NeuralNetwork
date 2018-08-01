@@ -96,8 +96,8 @@ typedef struct
 typedef struct
 {
     /* Structure */
-    sensor array_sensors[inputs];                     // sensors
-    sensor_neuron array_inputs[layer_size];           // sensor neurons
+    sensor array_inputs[inputs];                      // sensors
+    sensor_neuron array_first[layer_size];            // sensor neurons
     neuron_neuron array_hidden[layers][layer_size_h]; // layers of neuron neurons
     neuron_neuron array_outputs[outputs];             // output neurons
 
@@ -145,7 +145,7 @@ float randomizedFloat(float minimum, float maximum)
 }
 
 /*
- *  This function generates random floats with mean and variation
+ *  This function generates random distribution of floats within certain mean and variation
  * 
  *  @param float mean, float maximum
  *  @return float
@@ -203,11 +203,11 @@ void randomize(Neural_Network *net)
     // Randomize input neurons weights and biases
     for (int j = 0; j < layer_size; j++)
     {
-        net->array_inputs[j].bias = normalDistribution(0.0, 1.0);
+        net->array_first[j].bias = normalDistribution(0.0, 1.0);
 
         for (int k = 0; k < inputs; k++)
         {
-            net->array_inputs[j].weights[k] = normalDistribution(0.0, 1.0);
+            net->array_first[j].weights[k] = normalDistribution(0.0, 1.0);
         }
     }
 
@@ -284,7 +284,7 @@ void setInput(Neural_Network *net, const char *labelInfo, int number, int flag)
 
     for (int i = 0; i < inputs; i++)
     {
-        fscanf(image, "%f", &net->array_sensors[i].activation);
+        fscanf(image, "%f", &net->array_inputs[i].activation);
     }
 
     fclose(image);
@@ -424,21 +424,21 @@ void feedForward(Neural_Network *net)
 {
     float sum;
 
-    // Calculate input neurons activation
+    // Calculate first neurons activation
     for (int j = 0; j < layer_size; j++)
     {
         sum = 0.0;
 
         for (int k = 0; k < inputs; k++)
         {
-            sum += net->array_sensors[k].activation * net->array_inputs[j].weights[k];
+            sum += net->array_inputs[k].activation * net->array_first[j].weights[k];
         }
 
-        sum += net->array_inputs[j].bias;
+        sum += net->array_first[j].bias;
 
-        net->array_inputs[j].weighted_sum = sum;
+        net->array_first[j].weighted_sum = sum;
 
-        net->array_inputs[j].activation = activation(sum);
+        net->array_first[j].activation = activation(sum);
     }
 
     if (layers)
@@ -454,7 +454,7 @@ void feedForward(Neural_Network *net)
                 {
                     for (int k = 0; k < layer_size; k++)
                     {
-                        sum += net->array_inputs[k].activation * net->array_hidden[l][j].weights[k];
+                        sum += net->array_first[k].activation * net->array_hidden[l][j].weights[k];
                     }
                 }
                 else
@@ -499,7 +499,7 @@ void feedForward(Neural_Network *net)
 
             for (int k = 0; k < layer_size; k++)
             {
-                sum += net->array_inputs[k].activation * net->array_outputs[j].weights[k];
+                sum += net->array_first[k].activation * net->array_outputs[j].weights[k];
             }
 
             sum += net->array_outputs[j].bias;
@@ -542,7 +542,7 @@ void feedBackward(Neural_Network *net, int x)
         {
             for (int k = 0; k < layer_size; k++)
             {
-                net->array_outputs[j].weights_error[k][x] = net->array_outputs[j].bias_error[x] * net->array_inputs[k].activation;
+                net->array_outputs[j].weights_error[k][x] = net->array_outputs[j].bias_error[x] * net->array_first[k].activation;
             }
         }
     }
@@ -583,7 +583,7 @@ void feedBackward(Neural_Network *net, int x)
                 {
                     for (int k = 0; k < layer_size; k++)
                     {
-                        net->array_hidden[l][j].weights_error[k][x] = net->array_hidden[l][j].bias_error[x] * net->array_inputs[k].activation;
+                        net->array_hidden[l][j].weights_error[k][x] = net->array_hidden[l][j].bias_error[x] * net->array_first[k].activation;
                     }
                 }
                 else
@@ -596,7 +596,7 @@ void feedBackward(Neural_Network *net, int x)
             }
         }
 
-        // Calculate input neurons error
+        // Calculate first neurons error
         for (int j = 0; j < layer_size; j++)
         {
             float bias_error = 0.0;
@@ -606,19 +606,19 @@ void feedBackward(Neural_Network *net, int x)
                 bias_error += net->array_hidden[0][k].weights[j] * net->array_hidden[0][k].bias_error[x];
             }
 
-            bias_error = bias_error * activationDerivative(net->array_inputs[j].weighted_sum);
+            bias_error = bias_error * activationDerivative(net->array_first[j].weighted_sum);
 
-            net->array_inputs[j].bias_error[x] = bias_error;
+            net->array_first[j].bias_error[x] = bias_error;
 
             for (int k = 0; k < inputs; k++)
             {
-                net->array_inputs[j].weights_error[k][x] = net->array_inputs[j].bias_error[x] * net->array_sensors[k].activation;
+                net->array_first[j].weights_error[k][x] = net->array_first[j].bias_error[x] * net->array_inputs[k].activation;
             }
         }
     }
     else
     {
-        // Calculate input neurons error
+        // Calculate first neurons error
         for (int j = 0; j < layer_size; j++)
         {
             float bias_error = 0.0;
@@ -628,13 +628,13 @@ void feedBackward(Neural_Network *net, int x)
                 bias_error += net->array_outputs[k].weights[j] * net->array_outputs[k].bias_error[x];
             }
 
-            bias_error = bias_error * activationDerivative(net->array_inputs[j].weighted_sum);
+            bias_error = bias_error * activationDerivative(net->array_first[j].weighted_sum);
 
-            net->array_inputs[j].bias_error[x] = bias_error;
+            net->array_first[j].bias_error[x] = bias_error;
 
             for (int k = 0; k < inputs; k++)
             {
-                net->array_inputs[j].weights_error[k][x] = net->array_inputs[j].bias_error[x] * net->array_sensors[k].activation;
+                net->array_first[j].weights_error[k][x] = net->array_first[j].bias_error[x] * net->array_inputs[k].activation;
             }
         }
     }
@@ -647,16 +647,16 @@ void feedBackward(Neural_Network *net, int x)
  */
 void update(Neural_Network *net)
 {
-    // Adjust inputs
+    // Adjust first
     for (int j = 0; j < layer_size; j++)
     {
         for (int x = 0; x < batch_size; x++)
         {
-            net->array_inputs[j].bias = net->array_inputs[j].bias - (learning * net->array_inputs[j].bias_error[x]);
+            net->array_first[j].bias = net->array_first[j].bias - (learning * net->array_first[j].bias_error[x]);
 
             for (int k = 0; k < inputs; k++)
             {
-                net->array_inputs[j].weights[k] = net->array_inputs[j].weights[k] - (learning * net->array_inputs[j].weights_error[k][x]);
+                net->array_first[j].weights[k] = net->array_first[j].weights[k] - (learning * net->array_first[j].weights_error[k][x]);
             }
         }
     }
