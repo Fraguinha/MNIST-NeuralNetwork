@@ -51,7 +51,7 @@
 #define train_sessions (training / batch_size) // number of training sessions per epoch
 
 #define max_epochs 30             // maximum number of epochs
-#define learning 10.0 / batch_size // how much to adjust
+#define learning 3.0 / batch_size // how much to adjust
 
 /************** 
  * Structures *
@@ -60,35 +60,35 @@
 /* Sensor */
 typedef struct
 {
-    double activation;
+    float activation;
 
 } sensor;
 
 /* Neuron */
 typedef struct
 {
-    double bias;
-    double weights[inputs];
+    float bias;
+    float weights[inputs];
 
-    double weighted_sum;
-    double activation;
+    float weighted_sum;
+    float activation;
 
-    double bias_error[batch_size];
-    double weights_error[inputs][batch_size];
+    float bias_error[batch_size];
+    float weights_error[inputs][batch_size];
 
 } sensor_neuron;
 
 /* Neuron */
 typedef struct
 {
-    double bias;
-    double weights[layer_size];
+    float bias;
+    float weights[layer_size];
 
-    double weighted_sum;
-    double activation;
+    float weighted_sum;
+    float activation;
 
-    double bias_error[batch_size];
-    double weights_error[layer_size][batch_size];
+    float bias_error[batch_size];
+    float weights_error[layer_size][batch_size];
 
 } neuron_neuron;
 
@@ -146,50 +146,52 @@ void load(Neural_Network *net, const char *filename)
 }
 
 /*
- * The activation function
+ *  The activation function
  *
- * @param double x
- * @return double activation
+ *  @param float x
+ *  @return float activation
  */
-double activation(double x)
+float activation(float x)
 {
-    return 1.0 / (1.0 + exp(-x));
+    float value = 1.0 / (1.0 + expf(-(x)));
+
+    return value;
 }
 
 /*
- * The activation derivative function
+ *  The activation derivative function
  *
- * @param double x
- * @return double activation
+ *  @param float x
+ *  @return float activation
  */
-double activationDerivative(double x)
+float activationDerivative(float x)
 {
     return activation(x) * (1.0 - activation(x));
 }
 
 /*
- *  This function generates a random double
+ *  This function generates a random float
  *
- *  @param double minimum, double maximum
- *  @return double
+ *  @param float minimum, float maximum
+ *  @return float
  */
-double randomizedDouble(double minimum, double maximum)
+float randomizedDouble(float minimum, float maximum)
 {
-    return (((double)rand()) / (double)(RAND_MAX)) * (maximum - minimum) + minimum;
+    return (((float)rand()) / (float)(RAND_MAX)) * (maximum - minimum) + minimum;
 }
 
 /*
  *  This function generates random distribution of floats within certain mean and variation
  * 
- *  @param double mean, double maximum
- *  @return double
+ *  @param float mean, float maximum
+ *  @return float
  */
-double normalDistribution(double mean, double variation)
+float normalDistribution(float mean, float variation)
 {
     static int flag = 0;
 
-    double x1, x2, w, y1;
-    static double y2;
+    float x1, x2, w, y1;
+    static float y2;
 
     if (flag)
     {
@@ -309,7 +311,6 @@ void getFilename(char *filename, int number, int flag)
  */
 void setInput(Neural_Network *net, const char *labelInfo, int number, int flag)
 {
-
     char tifInfo[41];
 
     getFilename(tifInfo, number, flag);
@@ -318,7 +319,7 @@ void setInput(Neural_Network *net, const char *labelInfo, int number, int flag)
 
     for (int i = 0; i < inputs; i++)
     {
-        fscanf(image, "%lf", &net->array_inputs[i].activation);
+        fscanf(image, "%f", &net->array_inputs[i].activation);
     }
 
     fclose(image);
@@ -344,7 +345,7 @@ void setInput(Neural_Network *net, const char *labelInfo, int number, int flag)
  */
 void setPrediction(Neural_Network *net)
 {
-    double max = net->array_outputs[0].activation;
+    float max = net->array_outputs[0].activation;
 
     int prediction = 0;
 
@@ -362,13 +363,13 @@ void setPrediction(Neural_Network *net)
 
 /*
  *  This functions calculates the activation of all the neurons in the network
- *  activation[l] = sigmoid( weighted sum[l] ) => sigmoid( sum( weights[l] * activations[l-1] ) - bias[l] ) )
+ *  activation[l] = activation( weighted sum[l] ) => activation( sum( weights[l] * activations[l-1] ) - bias[l] ) )
  *
  *  @param Neural_Network *net
  */
 void feedForward(Neural_Network *net)
 {
-    double sum;
+    float sum;
 
     // Calculate first neurons activation
     for (int j = 0; j < layer_size; j++)
@@ -500,7 +501,7 @@ void feedBackward(Neural_Network *net, int x)
         {
             for (int j = 0; j < layer_size; j++)
             {
-                double bias_error = 0.0;
+                float bias_error = 0.0;
 
                 if (l == layers - 1)
                 {
@@ -545,7 +546,7 @@ void feedBackward(Neural_Network *net, int x)
         // Calculate first neurons error
         for (int j = 0; j < layer_size; j++)
         {
-            double bias_error = 0.0;
+            float bias_error = 0.0;
 
             for (int k = 0; k < layer_size; k++)
             {
@@ -567,7 +568,7 @@ void feedBackward(Neural_Network *net, int x)
         // Calculate first neurons error
         for (int j = 0; j < layer_size; j++)
         {
-            double bias_error = 0.0;
+            float bias_error = 0.0;
 
             for (int k = 0; k < outputs; k++)
             {
@@ -668,9 +669,9 @@ void score(Neural_Network *net)
         }
     }
 
-    double precision = ((double)correct / (double)testing) * 100;
+    float precision = ((float)correct / (float)testing) * 100;
 
-    printf("Neural Network score: %d / %d (%.2lf%%)\n", correct, testing, precision);
+    printf("Neural Network score: %d / %d (%.2f%%)\n", correct, testing, precision);
 }
 
 /*
@@ -774,6 +775,4 @@ int main(int argc, char const *argv[])
         // Test Specific Images
         scoreImages(&smarty_pants, argc, argv);
     }
-
-    return 0;
 }
