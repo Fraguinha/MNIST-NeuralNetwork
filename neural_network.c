@@ -726,13 +726,19 @@ void stochasticGradientDescent(Neural_Network *net)
 
             // Update parameters
             update(net);
+
+            // Show status
+            printf("Batch %02d: ", b + 1);
+
+            // Score
+            score(net);
         }
 
         // Save the Neural Network
         save(net, "smarty_pants.bin");
 
         // Show status
-        printf("Epoch %d: ", e);
+        printf("Epoch %02d: ", e);
 
         // Score
         score(net);
