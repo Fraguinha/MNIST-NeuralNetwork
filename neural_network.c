@@ -693,7 +693,7 @@ void scoreImages(Neural_Network *net, int argc, char const *argv[])
  *
  *  @param Neural_Network *net
  */
-void stochasticGradientDescent(Neural_Network *net)
+void stochasticGradientDescent(Neural_Network *net, int printFlag)
 {
     // for each epoch
     for (int e = 1; e <= max_epochs; e++)
@@ -717,21 +717,27 @@ void stochasticGradientDescent(Neural_Network *net)
             // Update parameters
             update(net);
 
-            // Show status
-            // printf("Batch %02d: ", b + 1);
+            if (printFlag)
+            {
+                // Show status
+                printf("Batch %02d: ", b + 1);
 
-            // Score
-            // score(net);
+                // Score
+                score(net);
+            }
         }
 
         // Save the Neural Network
         save(net, "custom.bin");
 
-        // Show status
-        // printf("Epoch %02d: ", e);
+        if (printFlag)
+        {
+            // Show status
+            printf("Epoch %02d: ", e);
 
-        // Score
-        // score(net);
+            // Score
+            score(net);
+        }
     }
 }
 
@@ -753,7 +759,7 @@ int main(int argc, char const *argv[])
         save(&net, "custom.bin");
 
         // Stochastic Gradient Descent
-        stochasticGradientDescent(&net);
+        stochasticGradientDescent(&net, 0);
     }
     else
     {
