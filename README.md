@@ -38,3 +38,29 @@ I chose the quadratic loss function as my cost function.
 ### Learning algorithm
 
 I used Stochastic Gradient Descent as my learning algorithm.
+
+## What can I do with this code?
+
+There are a couple things you can try using my code
+
+### Use smarty_pants.bin (trained model) to make predictions on test images
+
+1. compile the code: $ gcc neural_network.c -o neural_network.exe -lm
+
+2. Open the folder data/mnist-test-images/tif and look for a couple images you'd like to see the network classify.
+
+3. execute the code: $ ./neural_network.exe smarty_pants.bin 1 2 3
+
+### See smarty_pants.bin (trained model) precision over all the 10,000 images
+
+1. compile the code: $ gcc neural_network.c -o neural_network.exe -lm
+
+2. execute the code: $ ./neural_network.exe smarty_pants.bin
+
+### Train your own neural network
+
+1. compile the code: $ gcc neural_network.c -o neural_network.exe -lm
+
+2. execute the code: $ ./neural_network.exe
+
+(This will take a long time)

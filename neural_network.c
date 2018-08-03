@@ -752,7 +752,7 @@ int main(int argc, char const *argv[])
         randomize(&smarty_pants);
 
         // Save the Neural Network
-        save(&smarty_pants, "smarty_pants.bin");
+        save(&smarty_pants, "costum.bin");
 
         // Stochastic Gradient Descent
         stochasticGradientDescent(&smarty_pants);
