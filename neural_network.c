@@ -153,9 +153,7 @@ void load(Neural_Network *net, const char *filename)
  */
 float activation(float x)
 {
-    float value = 1.0 / (1.0 + expf(-(x)));
-
-    return value;
+    return 1.0 / (1.0 + expf(-(x)));
 }
 
 /*
