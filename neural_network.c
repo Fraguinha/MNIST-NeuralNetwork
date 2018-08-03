@@ -183,7 +183,7 @@ float randomizedFloat(float minimum, float maximum)
 /*
  *  This function generates random distribution of floats within certain mean and variation
  * 
- *  @param float mean, float maximum
+ *  @param float mean, float variation
  *  @return float
  */
 float randomNormalDistribution(float mean, float variation)
@@ -279,7 +279,7 @@ void randomize(Neural_Network *net)
 /*
  *  This functions creates filename string of an image
  *
- *  @param const char *filename, int number, int flag
+ *  @param const char *filename, const char *directory, int number
  */
 void getFilename(char *filename, const char *directory, int number)
 {
@@ -299,7 +299,7 @@ void getFilename(char *filename, const char *directory, int number)
 /*
  *  This functions sets the activations of all the sensors in the network, and the label
  *
- *  @param Neural_Network *net, const char *labelInfo, int number, int flag
+ *  @param Neural_Network *net, const char *dataDirectory, const char *labelInfo, int number
  */
 void setInput(Neural_Network *net, const char *dataDirectory, const char *labelInfo, int number)
 {
