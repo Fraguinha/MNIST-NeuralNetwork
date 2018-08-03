@@ -15,15 +15,15 @@ def main():
 
     for f in os.listdir(directory + "tif/"):
 
-        # Create directory names
+        # Create filenames
 
-        tif_dir = directory + "tif/" + f
+        tif_name = directory + "tif/" + f
 
-        txt_dir = directory + "txt/" + f[:-4] + ".txt"
+        txt_name = directory + "txt/" + f[:-4] + ".txt"
 
         # Get pixels
 
-        digit_image = Image.open(tif_dir)
+        digit_image = Image.open(tif_name)
 
         pixels = []
 
@@ -41,7 +41,7 @@ def main():
 
         # Save to text
 
-        text_file = open(txt_dir, "w")
+        text_file = open(txt_name, "w")
 
         for x in pixels:
 
@@ -53,15 +53,15 @@ def main():
 
     for f in os.listdir(directory + "tif/"):
 
-        # Create directory names
+        # Create filenames
 
-        tif_dir = directory + "tif/" + f
+        tif_name = directory + "tif/" + f
 
-        txt_dir = directory + "txt/" + f[:-4] + ".txt"
+        txt_name = directory + "txt/" + f[:-4] + ".txt"
 
         # Get pixels
 
-        digit_image = Image.open(tif_dir)
+        digit_image = Image.open(tif_name)
 
         pixels = []
 
@@ -79,7 +79,7 @@ def main():
 
         # Save to text
 
-        text_file = open(txt_dir, "w")
+        text_file = open(txt_name, "w")
 
         for x in pixels:
 
