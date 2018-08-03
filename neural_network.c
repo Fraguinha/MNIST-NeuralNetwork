@@ -725,7 +725,7 @@ void stochasticGradientDescent(Neural_Network *net)
         }
 
         // Save the Neural Network
-        save(net, "smarty_pants.bin");
+        save(net, "custom.bin");
 
         // Show status
         // printf("Epoch %02d: ", e);
@@ -742,33 +742,33 @@ void stochasticGradientDescent(Neural_Network *net)
 int main(int argc, char const *argv[])
 {
     // Create the Neural Network
-    Neural_Network smarty_pants;
+    Neural_Network net;
 
     if (argc == 1)
     {
         // Randomize the Neural Network
-        randomize(&smarty_pants);
+        randomize(&net);
 
         // Save the Neural Network
-        save(&smarty_pants, "costum.bin");
+        save(&net, "custom.bin");
 
         // Stochastic Gradient Descent
-        stochasticGradientDescent(&smarty_pants);
+        stochasticGradientDescent(&net);
     }
     else
     {
         // Load the Neural Network
-        load(&smarty_pants, argv[1]);
+        load(&net, argv[1]);
     }
 
     if (argc <= 2)
     {
         // Test Neural Network
-        score(&smarty_pants);
+        score(&net);
     }
     else
     {
         // Test Specific Images
-        scoreImages(&smarty_pants, argc, argv);
+        scoreImages(&net, argc, argv);
     }
 }
