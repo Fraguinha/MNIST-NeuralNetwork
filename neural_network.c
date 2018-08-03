@@ -175,7 +175,7 @@ float activationDerivative(float x)
  *  @param float minimum, float maximum
  *  @return float
  */
-float randomizedDouble(float minimum, float maximum)
+float randomizedFloat(float minimum, float maximum)
 {
     return (((float)rand()) / (float)(RAND_MAX)) * (maximum - minimum) + minimum;
 }
@@ -202,8 +202,8 @@ float normalDistribution(float mean, float variation)
     {
         do
         {
-            x1 = 2.0 * randomizedDouble(0.0, 1.0) - 1.0;
-            x2 = 2.0 * randomizedDouble(0.0, 1.0) - 1.0;
+            x1 = 2.0 * randomizedFloat(0.0, 1.0) - 1.0;
+            x2 = 2.0 * randomizedFloat(0.0, 1.0) - 1.0;
 
             w = x1 * x1 + x2 * x2;
 
@@ -721,20 +721,20 @@ void stochasticGradientDescent(Neural_Network *net)
             update(net);
 
             // Show status
-            printf("Batch %02d: ", b + 1);
+            // printf("Batch %02d: ", b + 1);
 
             // Score
-            score(net);
+            // score(net);
         }
 
         // Save the Neural Network
         save(net, "smarty_pants.bin");
 
         // Show status
-        printf("Epoch %02d: ", e);
+        // printf("Epoch %02d: ", e);
 
         // Score
-        score(net);
+        // score(net);
     }
 }
 
