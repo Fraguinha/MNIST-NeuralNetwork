@@ -720,7 +720,7 @@ void stochasticGradientDescent(Neural_Network *net, int printFlag)
             if (printFlag)
             {
                 // Show status
-                printf("Batch %02d: ", b + 1);
+                printf("Epoch %d, Batch %d: ", e, b + 1);
 
                 // Score
                 score(net);
@@ -729,15 +729,6 @@ void stochasticGradientDescent(Neural_Network *net, int printFlag)
 
         // Save the Neural Network
         save(net, "custom.bin");
-
-        if (printFlag)
-        {
-            // Show status
-            printf("Epoch %02d: ", e);
-
-            // Score
-            score(net);
-        }
     }
 }
 
