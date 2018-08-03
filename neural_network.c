@@ -234,7 +234,7 @@ void randomize(Neural_Network *net)
     // Update randomizer with seed
     srand((unsigned int)time(&seed));
 
-    // Randomize input neurons weights and biases
+    // Randomize first neurons weights and biases
     for (int j = 0; j < layer_size; j++)
     {
         net->array_first[j].bias = randomNormalDistribution(0.0, 1.0);
