@@ -661,7 +661,7 @@ void score(Neural_Network *net)
 
     float precision = ((float)correct / (float)testing) * 100;
 
-    printf("Neural Network score: %d / %d (%.2f%%)\n", correct, testing, precision);
+    printf("Neural Network score: %5d / %5d (%.2f%%)\n", correct, testing, precision);
 }
 
 /*
@@ -748,7 +748,7 @@ void stochasticGradientDescent(Neural_Network *net, int printFlag)
 int main(int argc, char const *argv[])
 {
     // Create the Neural Network
-    Neural_Network net;
+    static Neural_Network net;
 
     if (argc == 1)
     {
@@ -759,7 +759,7 @@ int main(int argc, char const *argv[])
         save(&net, "custom.bin");
 
         // Stochastic Gradient Descent
-        stochasticGradientDescent(&net, 0);
+        stochasticGradientDescent(&net, 1);
     }
     else
     {
