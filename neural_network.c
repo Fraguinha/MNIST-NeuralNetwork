@@ -186,7 +186,7 @@ float randomizedFloat(float minimum, float maximum)
  *  @param float mean, float maximum
  *  @return float
  */
-float normalDistribution(float mean, float variation)
+float randomNormalDistribution(float mean, float variation)
 {
     static int flag = 0;
 
@@ -239,11 +239,11 @@ void randomize(Neural_Network *net)
     // Randomize input neurons weights and biases
     for (int j = 0; j < layer_size; j++)
     {
-        net->array_first[j].bias = normalDistribution(0.0, 1.0);
+        net->array_first[j].bias = randomNormalDistribution(0.0, 1.0);
 
         for (int k = 0; k < inputs; k++)
         {
-            net->array_first[j].weights[k] = normalDistribution(0.0, 1.0) / sqrtf(inputs);
+            net->array_first[j].weights[k] = randomNormalDistribution(0.0, 1.0) / sqrtf(inputs);
         }
     }
 
@@ -254,11 +254,11 @@ void randomize(Neural_Network *net)
         {
             for (int j = 0; j < layer_size; j++)
             {
-                net->array_hidden[l][j].bias = normalDistribution(0.0, 1.0);
+                net->array_hidden[l][j].bias = randomNormalDistribution(0.0, 1.0);
 
                 for (int k = 0; k < layer_size; k++)
                 {
-                    net->array_hidden[l][j].weights[k] = normalDistribution(0.0, 1.0) / sqrtf(layer_size);
+                    net->array_hidden[l][j].weights[k] = randomNormalDistribution(0.0, 1.0) / sqrtf(layer_size);
                 }
             }
         }
@@ -267,11 +267,11 @@ void randomize(Neural_Network *net)
     // Randomize output neurons weights and biases
     for (int j = 0; j < outputs; j++)
     {
-        net->array_outputs[j].bias = normalDistribution(0.0, 1.0);
+        net->array_outputs[j].bias = randomNormalDistribution(0.0, 1.0);
 
         for (int k = 0; k < layer_size; k++)
         {
-            net->array_outputs[j].weights[k] = normalDistribution(0.0, 1.0) / sqrtf(layer_size);
+            net->array_outputs[j].weights[k] = randomNormalDistribution(0.0, 1.0) / sqrtf(layer_size);
         }
     }
 }
@@ -283,7 +283,6 @@ void randomize(Neural_Network *net)
  */
 void getFilename(char *filename, const char *directory, int number)
 {
-
     filename[0] = '\0';
 
     char num[6];
@@ -455,7 +454,7 @@ void feedForward(Neural_Network *net)
  *  This function propagates backward the error on all neurons in the network
  *  (error[l] = (weights[l+1] * error[l+1]) * derivativeOfActivation(weighted_sum[l])
  *
- *  @param Neural_Network *net
+ *  @param Neural_Network *net, int x
  */
 void feedBackward(Neural_Network *net, int x)
 {
