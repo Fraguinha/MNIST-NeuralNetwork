@@ -661,7 +661,7 @@ void score(Neural_Network *net)
 
     float precision = ((float)correct / (float)testing) * 100;
 
-    printf("Neural Network score: %5d / %5d (%.2f%%)\n", correct, testing, precision);
+    printf("Neural Network score: %5d / %5d (%5.2f%%)\n", correct, testing, precision);
 }
 
 /*
