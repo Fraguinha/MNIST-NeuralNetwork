@@ -281,7 +281,7 @@ void randomize(Neural_Network *net)
  *
  *  @param const char *filename, int number, int flag
  */
-void getFilename(char *filename, int number, int flag)
+void getFilename(char *filename, const char *directory, int number)
 {
 
     filename[0] = '\0';
@@ -289,13 +289,6 @@ void getFilename(char *filename, int number, int flag)
     char num[6];
 
     sprintf(num, "%05d", number);
-
-    char *directory = train_directory;
-
-    if (flag == 1)
-    {
-        char *directory = test_directory;
-    }
 
     char *extension = ".txt";
 
@@ -309,11 +302,11 @@ void getFilename(char *filename, int number, int flag)
  *
  *  @param Neural_Network *net, const char *labelInfo, int number, int flag
  */
-void setInput(Neural_Network *net, const char *labelInfo, int number, int flag)
+void setInput(Neural_Network *net, const char *dataDirectory, const char *labelInfo, int number)
 {
     char tifInfo[41];
 
-    getFilename(tifInfo, number, flag);
+    getFilename(tifInfo, dataDirectory, number);
 
     FILE *image = fopen(tifInfo, "r");
 
@@ -655,7 +648,7 @@ void score(Neural_Network *net)
     for (int x = 1; x <= testing; x++)
     {
         // Set Activation of input neurons
-        setInput(net, test_label, x, 1);
+        setInput(net, test_directory, test_label, x);
 
         // Propagate values forward
         feedForward(net);
@@ -684,7 +677,7 @@ void scoreImages(Neural_Network *net, int argc, char const *argv[])
     for (int i = 2; i < argc; i++)
     {
         // Set Activation of input neurons
-        setInput(net, test_label, atoi(argv[i]), 1);
+        setInput(net, test_directory, test_label, atoi(argv[i]));
 
         // Propagate values forward
         feedForward(net);
@@ -715,7 +708,7 @@ void stochasticGradientDescent(Neural_Network *net)
             for (int x = 1; x <= batch_size; x++)
             {
                 // Set Activation of input neurons
-                setInput(net, train_label, (b * batch_size) + x, 0);
+                setInput(net, train_directory, train_label, (b * batch_size) + x);
 
                 // Forward pass
                 feedForward(net);
