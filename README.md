@@ -2,19 +2,39 @@
 
 Digit recognition Neural Network made in C.
 
-## What im trying to do
+## What it is
 
-The goal is to build a simple neural network from scratch which will, hopefully, be able to take handwritten digit images as input and classify which digit was shown as the output.
+The goal in this project was to build a simple feedforward neural network from scratch which would, hopefully, be able to take in pixel values of handwritten digit images as input and correctly classify them as the output.
 
-## Neural Network Sketch
+## Neural Network
 
-![Network-Sketch](https://i.imgur.com/wCMvXsC.jpg)
+In this section i'll briefly try to explain a few sections of my network.
 
-At the time of this writing, This network consists of 784 sensors (one for each of the 28x28 pixels) all conected to every neuron on the first layer of 16 neurons (called sensor neurons). Those first neurons are in turn all connected to the neurons in the first hidden layer of neurons, containing 16 neurons. Finally the last hidden layer of neurons is connected to each of the 10 output neurons (one for each of the 10 digits).
+### Data
 
-### Sensor & Neuron Sketch
+For this project, I decided to use the mnist dataset of handwritten digits. It contains 70,000 images of handwritten digits.
 
-![Sensor/Neuron-Sketch](https://i.imgur.com/ZkVIwDJ.jpg)
+The data was split into 2 groups: 60,000 images for training and 10,000 images for testing.
 
-The Sensor only knows the grayscale value of the pixel it corresponds to.
-The Neuron knows each of the activations from the previous layer (inputs), what importance it gives each one (weights), its own activation bias (bias) and its own computed activation value (weighted_sum).
+Each image is 28x28 pixels in size, and contains a handwritten digit.
+
+### Structure
+
+I chose a network with:
+
+- 784 neurons as input (one for each pixel of each image).
+- 30 neurons on the first hidden layer.
+- no extra hidden layers.
+- and 10 neurons as output (one for each digit).
+
+### Neurons
+
+I chose the sigmoid function as the activation function for my neurons.
+
+### Cost function
+
+I chose the quadratic loss function as my cost function.
+
+### Learning algorithm
+
+I used Stochastic Gradient Descent as my learning algorithm.
