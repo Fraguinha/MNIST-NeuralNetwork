@@ -243,7 +243,7 @@ void randomize(Neural_Network *net)
 
         for (int k = 0; k < inputs; k++)
         {
-            net->array_first[j].weights[k] = normalDistribution(0.0, 1.0);
+            net->array_first[j].weights[k] = normalDistribution(0.0, 1.0) / sqrtf(inputs);
         }
     }
 
@@ -258,7 +258,7 @@ void randomize(Neural_Network *net)
 
                 for (int k = 0; k < layer_size; k++)
                 {
-                    net->array_hidden[l][j].weights[k] = normalDistribution(0.0, 1.0);
+                    net->array_hidden[l][j].weights[k] = normalDistribution(0.0, 1.0) / sqrtf(layer_size);
                 }
             }
         }
@@ -271,7 +271,7 @@ void randomize(Neural_Network *net)
 
         for (int k = 0; k < layer_size; k++)
         {
-            net->array_outputs[j].weights[k] = normalDistribution(0.0, 1.0);
+            net->array_outputs[j].weights[k] = normalDistribution(0.0, 1.0) / sqrtf(layer_size);
         }
     }
 }
