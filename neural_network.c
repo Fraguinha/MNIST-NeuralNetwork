@@ -58,14 +58,14 @@
  **************/
 
 /* Sensor */
-typedef struct
+typedef struct sensor
 {
     float activation;
 
 } sensor;
 
 /* Neuron */
-typedef struct
+typedef struct sensor_neuron
 {
     float bias;
     float weights[inputs];
@@ -79,7 +79,7 @@ typedef struct
 } sensor_neuron;
 
 /* Neuron */
-typedef struct
+typedef struct neuron_neuron
 {
     float bias;
     float weights[layer_size];
@@ -93,7 +93,7 @@ typedef struct
 } neuron_neuron;
 
 /* Neural Network */
-typedef struct
+typedef struct Neural_Network
 {
     /* Structure */
     sensor array_inputs[inputs];                      // sensors
