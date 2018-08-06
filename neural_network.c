@@ -739,33 +739,33 @@ void stochasticGradientDescent(Neural_Network *net, int printFlag)
 int main(int argc, char const *argv[])
 {
     // Create the Neural Network
-    static Neural_Network net;
+    Neural_Network *net = malloc(sizeof(Neural_Network));
 
     if (argc == 1)
     {
         // Randomize the Neural Network
-        randomize(&net);
+        randomize(net);
 
         // Save the Neural Network
-        save(&net, "custom.bin");
+        save(net, "custom.bin");
 
         // Stochastic Gradient Descent
-        stochasticGradientDescent(&net, 1);
+        stochasticGradientDescent(net, 1);
     }
     else
     {
         // Load the Neural Network
-        load(&net, argv[1]);
+        load(net, argv[1]);
     }
 
     if (argc <= 2)
     {
         // Test Neural Network
-        score(&net);
+        score(net);
     }
     else
     {
         // Test Specific Images
-        scoreImages(&net, argc, argv);
+        scoreImages(net, argc, argv);
     }
 }
