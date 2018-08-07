@@ -1,19 +1,19 @@
 /*
     neural_network.c
-    
+
     This program creates and trains a Neural Network using Stochastic Gradient Decent.
-    
+
     compilation: gcc neural_network.c -o neural_network.exe -lm
-    
+
     usage: ./neural_network.exe                             // Creates new network, trains, and tests it on all test images
     usage: ./neural_network.exe [neural_network.bin]        // Uses specified network, and tests it on all test images
     usage: ./neural_network.exe [neural_network.bin] [...]  // Uses specified network, and tests specified test images
-    
+
     author: Joao Fraga
     e-mail: joaoluisfreirefraga@gmail.com
 */
 
-/************* 
+/*************
  * Libraries *
  *************/
 
@@ -23,7 +23,7 @@
 #include <math.h>
 #include <time.h>
 
-/*************** 
+/***************
  * Definitions *
  ***************/
 
@@ -39,7 +39,7 @@
 #define train_label "data/mnist-train-labels.txt"
 #define test_label "data/mnist-test-labels.txt"
 
-/************ 
+/************
  * Tweaking *
  ************/
 
@@ -53,19 +53,30 @@
 #define max_epochs 30             // maximum number of epochs
 #define learning 3.0 / batch_size // how much to adjust
 
-/************** 
+/**************
  * Structures *
  **************/
 
+/* Data */
+typedef struct Data
+{
+    float training_inputs[training][inputs];
+    int training_labels[training];
+
+    float testing_inputs[testing][inputs];
+    int testing_labels[testing];
+
+} Data;
+
 /* Sensor */
-typedef struct sensor
+typedef struct Sensor
 {
     float activation;
 
-} sensor;
+} Sensor;
 
 /* Neuron */
-typedef struct sensor_neuron
+typedef struct Sensor_Neuron
 {
     float bias;
     float weights[inputs];
@@ -76,10 +87,10 @@ typedef struct sensor_neuron
     float bias_error[batch_size];
     float weights_error[inputs][batch_size];
 
-} sensor_neuron;
+} Sensor_Neuron;
 
 /* Neuron */
-typedef struct neuron_neuron
+typedef struct Neuron_Neuron
 {
     float bias;
     float weights[layer_size];
@@ -90,16 +101,16 @@ typedef struct neuron_neuron
     float bias_error[batch_size];
     float weights_error[layer_size][batch_size];
 
-} neuron_neuron;
+} Neuron_Neuron;
 
 /* Neural Network */
 typedef struct Neural_Network
 {
     /* Structure */
-    sensor array_inputs[inputs];                      // sensors
-    sensor_neuron array_first[layer_size];            // sensor neurons
-    neuron_neuron array_hidden[layers][layer_size_h]; // layers of neuron neurons
-    neuron_neuron array_outputs[outputs];             // output neurons
+    Sensor array_inputs[inputs];                      // sensors
+    Sensor_Neuron array_first[layer_size];            // sensor neurons
+    Neuron_Neuron array_hidden[layers][layer_size_h]; // layers of neuron neurons
+    Neuron_Neuron array_outputs[outputs];             // output neurons
 
     /* Information */
     int prediction;
@@ -110,6 +121,79 @@ typedef struct Neural_Network
 /************************
  * Function Definitions *
  ************************/
+
+/*
+ *  This functions creates filename string of an image
+ *
+ *  @param const char *filename, const char *directory, int number
+ */
+void getFilename(char *filename, const char *directory, int number)
+{
+    filename[0] = '\0';
+
+    char num[6];
+
+    sprintf(num, "%05d", number);
+
+    char *extension = ".txt";
+
+    strcat(filename, directory);
+    strcat(filename, num);
+    strcat(filename, extension);
+}
+
+/*
+ *  This functions loads data into memory
+ *
+ *  @param Data *data, const char *dataDirectoryTraining, const char *labelInfoTraining, const char *dataDirectoryTesting, const char *labelInfoTesting
+ */
+void loadData(Data *data, const char *dataDirectoryTraining, const char *labelInfoTraining, const char *dataDirectoryTesting, const char *labelInfoTesting, int trainFlag)
+{
+    FILE *image, *label;
+
+    char filename[41];
+
+    if (trainFlag)
+    {
+        label = fopen(labelInfoTraining, "r");
+
+        for (int x = 0; x < training; x++)
+        {
+            getFilename(filename, dataDirectoryTraining, x + 1);
+            image = fopen(filename, "r");
+
+            for (int j = 0; j < inputs; j++)
+            {
+                fscanf(image, "%f", &data->training_inputs[x][j]);
+            }
+
+            fclose(image);
+
+            fscanf(label, "%d", &data->training_labels[x]);
+        }
+
+        fclose(label);
+    }
+
+    label = fopen(labelInfoTesting, "r");
+
+    for (int x = 0; x < testing; x++)
+    {
+        getFilename(filename, dataDirectoryTesting, x + 1);
+        image = fopen(filename, "r");
+
+        for (int j = 0; j < inputs; j++)
+        {
+            fscanf(image, "%f", &data->testing_inputs[x][j]);
+        }
+
+        fclose(image);
+
+        fscanf(label, "%d", &data->testing_labels[x]);
+    }
+
+    fclose(label);
+}
 
 /*
  *  This functions saves the network to a binary file
@@ -146,28 +230,6 @@ void load(Neural_Network *net, const char *filename)
 }
 
 /*
- *  The activation function
- *
- *  @param float x
- *  @return float activation
- */
-float activation(float x)
-{
-    return 1.0 / (1.0 + expf(-(x)));
-}
-
-/*
- *  The activation derivative function
- *
- *  @param float x
- *  @return float activation
- */
-float activationDerivative(float x)
-{
-    return activation(x) * (1.0 - activation(x));
-}
-
-/*
  *  This function generates a random float
  *
  *  @param float minimum, float maximum
@@ -180,7 +242,7 @@ float randomizedFloat(float minimum, float maximum)
 
 /*
  *  This function generates random distribution of floats within certain mean and variation
- * 
+ *
  *  @param float mean, float variation
  *  @return float
  */
@@ -275,80 +337,52 @@ void randomize(Neural_Network *net)
 }
 
 /*
- *  This functions creates filename string of an image
- *
- *  @param const char *filename, const char *directory, int number
- */
-void getFilename(char *filename, const char *directory, int number)
-{
-    filename[0] = '\0';
-
-    char num[6];
-
-    sprintf(num, "%05d", number);
-
-    char *extension = ".txt";
-
-    strcat(filename, directory);
-    strcat(filename, num);
-    strcat(filename, extension);
-}
-
-/*
  *  This functions sets the activations of all the sensors in the network, and the label
  *
- *  @param Neural_Network *net, const char *dataDirectory, const char *labelInfo, int number
+ *  @param Neural_Network *net, Data *data, int number, int trainFlag
  */
-void setInput(Neural_Network *net, const char *dataDirectory, const char *labelInfo, int number)
+void setInput(Neural_Network *net, Data *data, int number, int trainFlag)
 {
-    char tifInfo[41];
-
-    getFilename(tifInfo, dataDirectory, number);
-
-    FILE *image = fopen(tifInfo, "r");
-
-    for (int i = 0; i < inputs; i++)
+    if (trainFlag)
     {
-        fscanf(image, "%f", &net->array_inputs[i].activation);
+        for (int j = 0; j < inputs; j++)
+        {
+            net->array_inputs[j].activation = data->training_inputs[number - 1][j];
+        }
+
+        net->label = data->training_labels[number - 1];
     }
-
-    fclose(image);
-
-    FILE *label = fopen(labelInfo, "r");
-
-    int trash;
-
-    for (int j = 1; j < number; j++)
+    else
     {
-        fscanf(label, "%d", &trash);
+        for (int j = 0; j < inputs; j++)
+        {
+            net->array_inputs[j].activation = data->testing_inputs[number - 1][j];
+        }
+
+        net->label = data->testing_labels[number - 1];
     }
-
-    fscanf(label, "%d", &net->label);
-
-    fclose(label);
 }
 
 /*
- *  This function calculates the network prediction
+ *  The activation function
  *
- *  @param Neural_Network *net
+ *  @param float x
+ *  @return float activation
  */
-void setPrediction(Neural_Network *net)
+float activation(float x)
 {
-    float max = net->array_outputs[0].activation;
+    return 1.0 / (1.0 + expf(-(x)));
+}
 
-    int prediction = 0;
-
-    for (int j = 1; j < outputs; j++)
-    {
-        if (net->array_outputs[j].activation > max)
-        {
-            max = net->array_outputs[j].activation;
-            prediction = j;
-        }
-    }
-
-    net->prediction = prediction;
+/*
+ *  The activation derivative function
+ *
+ *  @param float x
+ *  @return float activation
+ */
+float activationDerivative(float x)
+{
+    return activation(x) * (1.0 - activation(x));
 }
 
 /*
@@ -634,18 +668,77 @@ void update(Neural_Network *net)
 }
 
 /*
- *  This function tests how good the network is on the testing data
+ *  This function performs Stochastic Gradient Descent on the network
+ *  It is the learning algorithm
+ *
+ *  @param Neural_Network *net, Data *data
+ */
+void stochasticGradientDescent(Neural_Network *net, Data *data)
+{
+    // for each epoch
+    for (int e = 0; e < max_epochs; e++)
+    {
+        // for each batch in epoch
+        for (int b = 0; b < train_sessions; b++)
+        {
+            // for each example in batch
+            for (int x = 0; x < batch_size; x++)
+            {
+                // Set Activation of input neurons
+                setInput(net, data, 1 + (b * batch_size) + x, 1);
+
+                // Forward pass
+                feedForward(net);
+
+                // Backward pass
+                feedBackward(net, x);
+            }
+
+            // Update parameters
+            update(net);
+        }
+
+        // Save the Neural Network
+        save(net, "custom.bin");
+    }
+}
+
+/*
+ *  This function calculates the network prediction
  *
  *  @param Neural_Network *net
  */
-void score(Neural_Network *net)
+void setPrediction(Neural_Network *net)
+{
+    float max = net->array_outputs[0].activation;
+
+    int prediction = 0;
+
+    for (int j = 1; j < outputs; j++)
+    {
+        if (net->array_outputs[j].activation > max)
+        {
+            max = net->array_outputs[j].activation;
+            prediction = j;
+        }
+    }
+
+    net->prediction = prediction;
+}
+
+/*
+ *  This function tests how good the network is on the testing data
+ *
+ *  @param Neural_Network *net, Data *data
+ */
+void score(Neural_Network *net, Data *data)
 {
     int correct = 0;
 
     for (int x = 1; x <= testing; x++)
     {
         // Set Activation of input neurons
-        setInput(net, test_directory, test_label, x);
+        setInput(net, data, x, 0);
 
         // Propagate values forward
         feedForward(net);
@@ -667,14 +760,14 @@ void score(Neural_Network *net)
 /*
  *  This function classifies specific images
  *
- *  @param Neural_Network *net
+ *  @param Neural_Network *net, Data *data, int argc, char const *argv[]
  */
-void scoreImages(Neural_Network *net, int argc, char const *argv[])
+void scoreImages(Neural_Network *net, Data *data, int argc, char const *argv[])
 {
-    for (int i = 2; i < argc; i++)
+    for (int x = 2; x < argc; x++)
     {
         // Set Activation of input neurons
-        setInput(net, test_directory, test_label, atoi(argv[i]));
+        setInput(net, data, atoi(argv[x]), 0);
 
         // Propagate values forward
         feedForward(net);
@@ -683,52 +776,7 @@ void scoreImages(Neural_Network *net, int argc, char const *argv[])
         setPrediction(net);
 
         // Print result
-        printf("Neural Network prediction of image[%05d]: %d (%d is correct label)\n", atoi(argv[i]), net->prediction, net->label);
-    }
-}
-
-/*
- *  This function performs Stochastic Gradient Descent on the network
- *  It is the learning algorithm
- *
- *  @param Neural_Network *net
- */
-void stochasticGradientDescent(Neural_Network *net, int printFlag)
-{
-    // for each epoch
-    for (int e = 1; e <= max_epochs; e++)
-    {
-        // for each batch in epoch
-        for (int b = 0; b < train_sessions; b++)
-        {
-            // for each example in batch
-            for (int x = 1; x <= batch_size; x++)
-            {
-                // Set Activation of input neurons
-                setInput(net, train_directory, train_label, (b * batch_size) + x);
-
-                // Forward pass
-                feedForward(net);
-
-                // Backward pass
-                feedBackward(net, x - 1);
-            }
-
-            // Update parameters
-            update(net);
-
-            if (printFlag)
-            {
-                // Show status
-                printf("Epoch %d, Batch %d: ", e, b + 1);
-
-                // Score
-                score(net);
-            }
-        }
-
-        // Save the Neural Network
-        save(net, "custom.bin");
+        printf("Neural Network prediction of image[%05d]: %d (%d is correct label)\n", atoi(argv[x]), net->prediction, net->label);
     }
 }
 
@@ -741,19 +789,25 @@ int main(int argc, char const *argv[])
     // Create the Neural Network
     Neural_Network *net = malloc(sizeof(Neural_Network));
 
+    // Create the Data Structure
+    Data *data = malloc(sizeof(Data));
+
     if (argc == 1)
     {
+        // Load all the data
+        loadData(data, train_directory, train_label, test_directory, test_label, 1);
+
         // Randomize the Neural Network
         randomize(net);
 
-        // Save the Neural Network
-        save(net, "custom.bin");
-
         // Stochastic Gradient Descent
-        stochasticGradientDescent(net, 1);
+        stochasticGradientDescent(net, data);
     }
     else
     {
+        // Load the test data
+        loadData(data, train_directory, train_label, test_directory, test_label, 0);
+
         // Load the Neural Network
         load(net, argv[1]);
     }
@@ -761,11 +815,11 @@ int main(int argc, char const *argv[])
     if (argc <= 2)
     {
         // Test Neural Network
-        score(net);
+        score(net, data);
     }
     else
     {
         // Test Specific Images
-        scoreImages(net, argc, argv);
+        scoreImages(net, data, argc, argv);
     }
 }
