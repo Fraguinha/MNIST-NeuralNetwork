@@ -287,14 +287,8 @@ float randomNormalDistribution(float mean, float variation)
  */
 void randomize(Neural_Network *net)
 {
-    // Make first randomizer
+    // Make randomizer
     srand((unsigned int)time(NULL));
-
-    // Make random seed
-    long int seed = rand();
-
-    // Update randomizer with seed
-    srand((unsigned int)time(&seed));
 
     // Randomize first neurons weights and biases
     for (int j = 0; j < layer_size; j++)
@@ -333,6 +327,38 @@ void randomize(Neural_Network *net)
         {
             net->array_outputs[j].weights[k] = randomNormalDistribution(0.0, 1.0) / sqrtf(layer_size);
         }
+    }
+}
+
+/*
+ *  This functions randomizes the data order
+ *
+ *  @param Neural_Network *net
+ */
+void shuffle(Data *data)
+{
+    // Make randomizer
+    srand((unsigned int)time(NULL));
+
+    float temp1[inputs];
+    int temp2, r;
+
+    for (int x = 0; x < training - 2; x++)
+    {
+        r = rand() % training;
+
+        for (int j = 0; j < inputs; j++)
+        {
+            temp1[j] = data->training_inputs[x][j];
+
+            data->training_inputs[x][j] = data->training_inputs[r][j];
+            data->training_inputs[r][j] = temp1[j];
+        }
+
+        temp2 = data->training_labels[x];
+
+        data->training_labels[x] = data->training_labels[r];
+        data->training_labels[r] = temp2;
     }
 }
 
@@ -678,13 +704,16 @@ void stochasticGradientDescent(Neural_Network *net, Data *data)
     // for each epoch
     for (int e = 0; e < max_epochs; e++)
     {
+        // Shuffle data
+        shuffle(data);
+
         // for each batch in epoch
         for (int b = 0; b < train_sessions; b++)
         {
             // for each example in batch
             for (int x = 0; x < batch_size; x++)
             {
-                // Set Activation of input neurons
+                // Set activation of input neurons
                 setInput(net, data, 1 + (b * batch_size) + x, 1);
 
                 // Forward pass
