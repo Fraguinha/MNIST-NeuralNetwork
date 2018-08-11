@@ -843,7 +843,7 @@ int main(int argc, char const *argv[])
         // Load the test data
         loadData(data, train_directory, train_label, test_directory, test_label, 0);
 
-        printf(":: Loading Neural Network");
+        printf(":: Loading Neural Network\n");
         // Load the Neural Network
         load(net, argv[1]);
     }
@@ -856,7 +856,7 @@ int main(int argc, char const *argv[])
     }
     else
     {
-        printf(":: Predicting Images");
+        printf(":: Predicting Images\n");
         // predict Images
         predict(net, data, argc, argv);
 
