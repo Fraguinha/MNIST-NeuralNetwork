@@ -791,7 +791,7 @@ void score(Neural_Network *net, Data *data)
  *
  *  @param Neural_Network *net, Data *data, int argc, char const *argv[]
  */
-void scoreImages(Neural_Network *net, Data *data, int argc, char const *argv[])
+void predict(Neural_Network *net, Data *data, int argc, char const *argv[])
 {
     for (int x = 2; x < argc; x++)
     {
@@ -815,40 +815,50 @@ void scoreImages(Neural_Network *net, Data *data, int argc, char const *argv[])
 
 int main(int argc, char const *argv[])
 {
+    printf(":: Creating Neural Network\n");
     // Create the Neural Network
     Neural_Network *net = malloc(sizeof(Neural_Network));
 
+    printf(":: Creating Data Structure\n");
     // Create the Data Structure
     Data *data = malloc(sizeof(Data));
 
     if (argc == 1)
     {
+        printf(":: Loading data...\n");
         // Load all the data
         loadData(data, train_directory, train_label, test_directory, test_label, 1);
 
+        printf(":: Initializing Neural Network\n");
         // Randomize the Neural Network
         randomize(net);
 
+        printf(":: Initializing Learning...\n");
         // Stochastic Gradient Descent
         stochasticGradientDescent(net, data);
     }
     else
     {
+        printf(":: Loading data...\n");
         // Load the test data
         loadData(data, train_directory, train_label, test_directory, test_label, 0);
 
+        printf(":: Loading Neural Network");
         // Load the Neural Network
         load(net, argv[1]);
     }
 
     if (argc <= 2)
     {
+        printf(":: Scoring Neural Network...\n");
         // Test Neural Network
         score(net, data);
     }
     else
     {
-        // Test Specific Images
-        scoreImages(net, data, argc, argv);
+        printf(":: Predicting Images");
+        // predict Images
+        predict(net, data, argc, argv);
+
     }
 }
