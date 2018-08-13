@@ -123,6 +123,38 @@ typedef struct Neural_Network
  ************************/
 
 /*
+ *  This functions checks if file exists
+ *
+ *  @param const char *filename, int binFlag
+ *  @return int
+ */
+int check_file(const char *filename, int binFlag)
+{
+    FILE *file;
+    
+    if (binFlag) {
+        
+        if ((file = fopen(filename, "rb")))
+        {
+            fclose(file);
+
+            return 1;
+        }
+    }
+    else
+    {
+        if ((file = fopen(filename, "r")))
+        {
+            fclose(file);
+
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+/*
  *  This functions creates filename string of an image
  *
  *  @param const char *filename, const char *directory, int number
@@ -147,40 +179,71 @@ void getFilename(char *filename, const char *directory, int number)
  *
  *  @param Data *data, const char *dataDirectoryTraining, const char *labelInfoTraining, const char *dataDirectoryTesting, const char *labelInfoTesting
  */
-void loadData(Data *data, const char *dataDirectoryTraining, const char *labelInfoTraining, const char *dataDirectoryTesting, const char *labelInfoTesting, int trainFlag)
+void loadData(Data *data, const char *dataDirectoryTraining, const char *labelInfoTraining, const char *dataDirectoryTesting, const char *labelInfoTesting)
 {
     FILE *image, *label;
 
     char filename[41];
 
-    if (trainFlag)
+    if (check_file(labelInfoTraining, 0))
     {
         label = fopen(labelInfoTraining, "r");
-
-        for (int x = 0; x < training; x++)
-        {
-            getFilename(filename, dataDirectoryTraining, x + 1);
-            image = fopen(filename, "r");
-
-            for (int j = 0; j < inputs; j++)
-            {
-                fscanf(image, "%f", &data->training_inputs[x][j]);
-            }
-
-            fclose(image);
-
-            fscanf(label, "%d", &data->training_labels[x]);
-        }
-
-        fclose(label);
+    }
+    else
+    {
+        printf("!! File not found: %s\n", filename);
+        exit(1);
     }
 
-    label = fopen(labelInfoTesting, "r");
+    for (int x = 0; x < training; x++)
+    {
+        getFilename(filename, dataDirectoryTraining, x + 1);
+        
+        if(check_file(filename, 0))
+        {            
+            image = fopen(filename, "r");
+        }
+        else 
+        {
+            printf("!! File not found: %s\n", filename);
+            exit(1);
+        }
+
+        for (int j = 0; j < inputs; j++)
+        {
+            fscanf(image, "%f", &data->training_inputs[x][j]);
+        }
+
+        fclose(image);
+
+        fscanf(label, "%d", &data->training_labels[x]);
+    }
+
+    fclose(label);
+
+    if(check_file(labelInfoTesting, 0))
+    {
+        label = fopen(labelInfoTesting, "r");
+    }
+    else
+    {
+        printf("!! File not found: %s\n", filename);
+        exit(1);
+    }
 
     for (int x = 0; x < testing; x++)
     {
         getFilename(filename, dataDirectoryTesting, x + 1);
-        image = fopen(filename, "r");
+        
+        if(check_file(filename, 0))
+        {
+            image = fopen(filename, "r");
+        }
+        else
+        {
+            printf("!! File not found: %s\n", filename);
+            exit(1);
+        }
 
         for (int j = 0; j < inputs; j++)
         {
@@ -198,9 +261,43 @@ void loadData(Data *data, const char *dataDirectoryTraining, const char *labelIn
 /*
  *  This functions saves the network to a binary file
  *
+ *  @param Data *data, const char *filename
+ */
+void saveDataBin(Data *data, const char *filename)
+{
+    FILE *fp = fopen(filename, "wb");
+
+    if (fp != NULL)
+    {
+        fwrite(data, sizeof(Data), 1, fp);
+    }
+
+    fclose(fp);
+}
+
+/*
+ *  This functions loads the network from a binary file
+ *
+ *  @param Data *data, const char *filename
+ */
+void loadDataBin(Data *data, const char *filename)
+{
+    FILE *fp = fopen(filename, "rb");
+
+    if (fp != NULL)
+    {
+        fread(data, sizeof(Data), 1, fp);
+    }
+
+    fclose(fp);
+}
+
+/*
+ *  This functions saves the network to a binary file
+ *
  *  @param Neural_Network *net, const char *filename
  */
-void save(Neural_Network *net, const char *filename)
+void saveNetworkBin(Neural_Network *net, const char *filename)
 {
     FILE *fp = fopen(filename, "wb");
 
@@ -217,7 +314,7 @@ void save(Neural_Network *net, const char *filename)
  *
  *  @param Neural_Network *net, const char *filename
  */
-void load(Neural_Network *net, const char *filename)
+void loadNetworkBin(Neural_Network *net, const char *filename)
 {
     FILE *fp = fopen(filename, "rb");
 
@@ -726,9 +823,6 @@ void stochasticGradientDescent(Neural_Network *net, Data *data)
             // Update parameters
             update(net);
         }
-
-        // Save the Neural Network
-        save(net, "custom.bin");
     }
 }
 
@@ -825,9 +919,22 @@ int main(int argc, char const *argv[])
 
     if (argc == 1)
     {
-        printf(":: Loading data...\n");
-        // Load all the data
-        loadData(data, train_directory, train_label, test_directory, test_label, 1);
+        if (check_file("data.bin", 1)) 
+        {
+            printf(":: Loading data\n");
+            // Load the data
+            loadDataBin(data, "data.bin");
+        }
+        else
+        {
+            printf(":: Loading data...\n");
+            // Load the Data
+            loadData(data, train_directory, train_label, test_directory, test_label);
+
+            printf(":: Saving data\n");
+            // Save the Data
+            saveDataBin(data, "data.bin");
+        }
 
         printf(":: Initializing Neural Network\n");
         // Randomize the Neural Network
@@ -836,21 +943,46 @@ int main(int argc, char const *argv[])
         printf(":: Initializing Learning...\n");
         // Stochastic Gradient Descent
         stochasticGradientDescent(net, data);
+
+        printf(":: Saving Neural Network\n");
+        // Save the Neural Network
+        saveNetworkBin(net, "custom.bin");
     }
     else
     {
-        printf(":: Loading data...\n");
-        // Load the test data
-        loadData(data, train_directory, train_label, test_directory, test_label, 0);
+        if (check_file("data.bin", 1)) 
+        {
+            printf(":: Loading data\n");
+            // Load the data
+            loadDataBin(data, "data.bin");
+        }
+        else
+        {
+            printf(":: Loading data...\n");
+            // Load the Data
+            loadData(data, train_directory, train_label, test_directory, test_label);
 
-        printf(":: Loading Neural Network\n");
-        // Load the Neural Network
-        load(net, argv[1]);
+            printf(":: Saving data\n");
+            // Save the Data
+            saveDataBin(data, "data.bin");
+        }
+
+        if (check_file(argv[1], 1)) 
+        {
+            printf(":: Loading Neural Network\n");
+            // Load the Neural Network
+            loadNetworkBin(net, argv[1]);
+        }
+        else 
+        {            
+            printf("!! File not found: %s\n", argv[1]);
+            exit(1);
+        }
     }
 
     if (argc <= 2)
     {
-        printf(":: Scoring Neural Network...\n");
+        printf(":: Scoring Neural Network\n");
         // Test Neural Network
         score(net, data);
     }
@@ -859,6 +991,8 @@ int main(int argc, char const *argv[])
         printf(":: Predicting Images\n");
         // predict Images
         predict(net, data, argc, argv);
-
     }
+
+    exit(0);
+
 }
