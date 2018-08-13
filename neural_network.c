@@ -131,9 +131,10 @@ typedef struct Neural_Network
 int check_file(const char *filename, int binFlag)
 {
     FILE *file;
-    
-    if (binFlag) {
-        
+
+    if (binFlag)
+    {
+
         if ((file = fopen(filename, "rb")))
         {
             fclose(file);
@@ -198,12 +199,12 @@ void loadData(Data *data, const char *dataDirectoryTraining, const char *labelIn
     for (int x = 0; x < training; x++)
     {
         getFilename(filename, dataDirectoryTraining, x + 1);
-        
-        if(check_file(filename, 0))
-        {            
+
+        if (check_file(filename, 0))
+        {
             image = fopen(filename, "r");
         }
-        else 
+        else
         {
             printf("!! File not found: %s\n", filename);
             exit(1);
@@ -221,7 +222,7 @@ void loadData(Data *data, const char *dataDirectoryTraining, const char *labelIn
 
     fclose(label);
 
-    if(check_file(labelInfoTesting, 0))
+    if (check_file(labelInfoTesting, 0))
     {
         label = fopen(labelInfoTesting, "r");
     }
@@ -234,8 +235,8 @@ void loadData(Data *data, const char *dataDirectoryTraining, const char *labelIn
     for (int x = 0; x < testing; x++)
     {
         getFilename(filename, dataDirectoryTesting, x + 1);
-        
-        if(check_file(filename, 0))
+
+        if (check_file(filename, 0))
         {
             image = fopen(filename, "r");
         }
@@ -919,7 +920,7 @@ int main(int argc, char const *argv[])
 
     if (argc == 1)
     {
-        if (check_file("data.bin", 1)) 
+        if (check_file("data.bin", 1))
         {
             printf(":: Loading data\n");
             // Load the data
@@ -950,7 +951,7 @@ int main(int argc, char const *argv[])
     }
     else
     {
-        if (check_file("data.bin", 1)) 
+        if (check_file("data.bin", 1))
         {
             printf(":: Loading data\n");
             // Load the data
@@ -967,14 +968,14 @@ int main(int argc, char const *argv[])
             saveDataBin(data, "data.bin");
         }
 
-        if (check_file(argv[1], 1)) 
+        if (check_file(argv[1], 1))
         {
             printf(":: Loading Neural Network\n");
             // Load the Neural Network
             loadNetworkBin(net, argv[1]);
         }
-        else 
-        {            
+        else
+        {
             printf("!! File not found: %s\n", argv[1]);
             exit(1);
         }
@@ -994,5 +995,4 @@ int main(int argc, char const *argv[])
     }
 
     exit(0);
-
 }
