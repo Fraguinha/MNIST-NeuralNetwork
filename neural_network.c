@@ -122,13 +122,13 @@ typedef struct Neural_Network
  * Function Definitions *
  ************************/
 
+int check_file(const char *filename, int binFlag)
 /*
  *  This functions checks if file exists
  *
  *  @param const char *filename, int binFlag
  *  @return int
  */
-int check_file(const char *filename, int binFlag)
 {
     FILE *file;
 
@@ -155,12 +155,12 @@ int check_file(const char *filename, int binFlag)
     return 0;
 }
 
+void getFilename(char *filename, const char *directory, int number)
 /*
  *  This functions creates filename string of an image
  *
  *  @param const char *filename, const char *directory, int number
  */
-void getFilename(char *filename, const char *directory, int number)
 {
     filename[0] = '\0';
 
@@ -175,12 +175,12 @@ void getFilename(char *filename, const char *directory, int number)
     strcat(filename, extension);
 }
 
+void loadData(Data *data, const char *dataDirectoryTraining, const char *labelInfoTraining, const char *dataDirectoryTesting, const char *labelInfoTesting)
 /*
  *  This functions loads data into memory
  *
  *  @param Data *data, const char *dataDirectoryTraining, const char *labelInfoTraining, const char *dataDirectoryTesting, const char *labelInfoTesting
  */
-void loadData(Data *data, const char *dataDirectoryTraining, const char *labelInfoTraining, const char *dataDirectoryTesting, const char *labelInfoTesting)
 {
     FILE *image, *label;
 
@@ -259,12 +259,12 @@ void loadData(Data *data, const char *dataDirectoryTraining, const char *labelIn
     fclose(label);
 }
 
+void saveDataBin(Data *data, const char *filename)
 /*
  *  This functions saves the network to a binary file
  *
  *  @param Data *data, const char *filename
  */
-void saveDataBin(Data *data, const char *filename)
 {
     FILE *fp = fopen(filename, "wb");
 
@@ -276,12 +276,12 @@ void saveDataBin(Data *data, const char *filename)
     fclose(fp);
 }
 
+void loadDataBin(Data *data, const char *filename)
 /*
  *  This functions loads the network from a binary file
  *
  *  @param Data *data, const char *filename
  */
-void loadDataBin(Data *data, const char *filename)
 {
     FILE *fp = fopen(filename, "rb");
 
@@ -293,12 +293,12 @@ void loadDataBin(Data *data, const char *filename)
     fclose(fp);
 }
 
+void saveNetworkBin(Neural_Network *net, const char *filename)
 /*
  *  This functions saves the network to a binary file
  *
  *  @param Neural_Network *net, const char *filename
  */
-void saveNetworkBin(Neural_Network *net, const char *filename)
 {
     FILE *fp = fopen(filename, "wb");
 
@@ -310,12 +310,12 @@ void saveNetworkBin(Neural_Network *net, const char *filename)
     fclose(fp);
 }
 
+void loadNetworkBin(Neural_Network *net, const char *filename)
 /*
  *  This functions loads the network from a binary file
  *
  *  @param Neural_Network *net, const char *filename
  */
-void loadNetworkBin(Neural_Network *net, const char *filename)
 {
     FILE *fp = fopen(filename, "rb");
 
@@ -327,24 +327,24 @@ void loadNetworkBin(Neural_Network *net, const char *filename)
     fclose(fp);
 }
 
+float randomizedFloat(float minimum, float maximum)
 /*
  *  This function generates a random float
  *
  *  @param float minimum, float maximum
  *  @return float
  */
-float randomizedFloat(float minimum, float maximum)
 {
     return (((float)rand()) / (float)(RAND_MAX)) * (maximum - minimum) + minimum;
 }
 
+float randomNormalDistribution(float mean, float variation)
 /*
  *  This function generates random distribution of floats within certain mean and variation
  *
  *  @param float mean, float variation
  *  @return float
  */
-float randomNormalDistribution(float mean, float variation)
 {
     static int flag = 0;
 
@@ -378,12 +378,12 @@ float randomNormalDistribution(float mean, float variation)
     return (mean + y1 * variation);
 }
 
+void randomize(Neural_Network *net)
 /*
  *  This functions randomizes all the weights and biases of the neurons in the network
  *
  *  @param Neural_Network *net
  */
-void randomize(Neural_Network *net)
 {
     // Make randomizer
     srand((unsigned int)time(NULL));
@@ -428,12 +428,12 @@ void randomize(Neural_Network *net)
     }
 }
 
+void shuffle(Data *data)
 /*
  *  This functions randomizes the data order
  *
  *  @param Neural_Network *net
  */
-void shuffle(Data *data)
 {
     // Make randomizer
     srand((unsigned int)time(NULL));
@@ -460,12 +460,12 @@ void shuffle(Data *data)
     }
 }
 
+void setInput(Neural_Network *net, Data *data, int number, int trainFlag)
 /*
  *  This functions sets the activations of all the sensors in the network, and the label
  *
  *  @param Neural_Network *net, Data *data, int number, int trainFlag
  */
-void setInput(Neural_Network *net, Data *data, int number, int trainFlag)
 {
     if (trainFlag)
     {
@@ -487,35 +487,35 @@ void setInput(Neural_Network *net, Data *data, int number, int trainFlag)
     }
 }
 
+float activation(float x)
 /*
  *  The activation function
  *
  *  @param float x
  *  @return float activation
  */
-float activation(float x)
 {
     return 1.0 / (1.0 + expf(-(x)));
 }
 
+float activationDerivative(float x)
 /*
  *  The activation derivative function
  *
  *  @param float x
  *  @return float activation
  */
-float activationDerivative(float x)
 {
     return activation(x) * (1.0 - activation(x));
 }
 
+void feedForward(Neural_Network *net)
 /*
  *  This functions calculates the activation of all the neurons in the network
  *  activation[l] = activation( weighted sum[l] ) => activation( sum( weights[l] * activations[l-1] ) - bias[l] ) )
  *
  *  @param Neural_Network *net
  */
-void feedForward(Neural_Network *net)
 {
     float sum;
 
@@ -606,13 +606,13 @@ void feedForward(Neural_Network *net)
     }
 }
 
+void feedBackward(Neural_Network *net, int x)
 /*
  *  This function propagates backward the error on all neurons in the network
  *  (error[l] = (weights[l+1] * error[l+1]) * derivativeOfActivation(weighted_sum[l])
  *
  *  @param Neural_Network *net, int x
  */
-void feedBackward(Neural_Network *net, int x)
 {
     // Calculate output neurons error
     for (int j = 0; j < outputs; j++)
@@ -735,12 +735,12 @@ void feedBackward(Neural_Network *net, int x)
     }
 }
 
+void update(Neural_Network *net)
 /*
  *  This function updates the weights and biases
  *
  *  @param Neural_Network *net
  */
-void update(Neural_Network *net)
 {
     // Adjust first
     for (int j = 0; j < layer_size; j++)
@@ -791,13 +791,13 @@ void update(Neural_Network *net)
     }
 }
 
+void stochasticGradientDescent(Neural_Network *net, Data *data)
 /*
  *  This function performs Stochastic Gradient Descent on the network
  *  It is the learning algorithm
  *
  *  @param Neural_Network *net, Data *data
  */
-void stochasticGradientDescent(Neural_Network *net, Data *data)
 {
     // for each epoch
     for (int e = 0; e < max_epochs; e++)
@@ -827,12 +827,12 @@ void stochasticGradientDescent(Neural_Network *net, Data *data)
     }
 }
 
+void setPrediction(Neural_Network *net)
 /*
  *  This function calculates the network prediction
  *
  *  @param Neural_Network *net
  */
-void setPrediction(Neural_Network *net)
 {
     float max = net->array_outputs[0].activation;
 
@@ -850,12 +850,12 @@ void setPrediction(Neural_Network *net)
     net->prediction = prediction;
 }
 
+void score(Neural_Network *net, Data *data)
 /*
  *  This function tests how good the network is on the testing data
  *
  *  @param Neural_Network *net, Data *data
  */
-void score(Neural_Network *net, Data *data)
 {
     int correct = 0;
 
@@ -881,12 +881,12 @@ void score(Neural_Network *net, Data *data)
     printf("Neural Network score: %5d / %5d (%5.2f%%)\n", correct, testing, precision);
 }
 
+void predict(Neural_Network *net, Data *data, int argc, char const *argv[])
 /*
  *  This function classifies specific images
  *
  *  @param Neural_Network *net, Data *data, int argc, char const *argv[]
  */
-void predict(Neural_Network *net, Data *data, int argc, char const *argv[])
 {
     for (int x = 2; x < argc; x++)
     {
