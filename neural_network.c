@@ -367,7 +367,7 @@ float randomNormalDistribution(float mean, float variation)
 
         } while (w >= 1.0);
 
-        w = sqrt((-2.0 * log(w)) / w);
+        w = sqrtf((-2.0 * logf(w)) / w);
 
         y1 = x1 * w;
         y2 = x2 * w;
@@ -438,25 +438,25 @@ void shuffle(Data *data)
     // Make randomizer
     srand((unsigned int)time(NULL));
 
-    float temp1[inputs];
-    int temp2, r;
+    float tempArray[inputs];
+    int temp, random;
 
     for (int x = 0; x < training - 2; x++)
     {
-        r = rand() % training;
+        random = rand() % training;
 
         for (int j = 0; j < inputs; j++)
         {
-            temp1[j] = data->training_inputs[x][j];
+            tempArray[j] = data->training_inputs[x][j];
 
-            data->training_inputs[x][j] = data->training_inputs[r][j];
-            data->training_inputs[r][j] = temp1[j];
+            data->training_inputs[x][j] = data->training_inputs[random][j];
+            data->training_inputs[random][j] = tempArray[j];
         }
 
-        temp2 = data->training_labels[x];
+        temp = data->training_labels[x];
 
-        data->training_labels[x] = data->training_labels[r];
-        data->training_labels[r] = temp2;
+        data->training_labels[x] = data->training_labels[random];
+        data->training_labels[random] = temp;
     }
 }
 
@@ -993,6 +993,9 @@ int main(int argc, char const *argv[])
         // predict Images
         predict(net, data, argc, argv);
     }
+
+    free(data);
+    free(net);
 
     exit(0);
 }
