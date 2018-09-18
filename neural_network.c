@@ -212,7 +212,7 @@ void loadData(Data *data, const char *dataDirectoryTraining, const char *labelIn
 
         for (int j = 0; j < inputs; j++)
         {
-            fscanf(image, "%f", &data->training_inputs[x][j]);
+            fscanf(image, "%lf", &data->training_inputs[x][j]);
         }
 
         fclose(image);
@@ -248,7 +248,7 @@ void loadData(Data *data, const char *dataDirectoryTraining, const char *labelIn
 
         for (int j = 0; j < inputs; j++)
         {
-            fscanf(image, "%f", &data->testing_inputs[x][j]);
+            fscanf(image, "%lf", &data->testing_inputs[x][j]);
         }
 
         fclose(image);
