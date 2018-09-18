@@ -44,7 +44,7 @@
  ************/
 
 #define layer_size 30                          // number of neurons for each layer
-#define layers 0                               // number of hidden layers
+#define layers 1                               // number of hidden layers
 #define layer_size_h (layers ? layer_size : 0) // number of hidden layer neurons
 
 #define batch_size 10                          // number of examples per batch
@@ -60,10 +60,10 @@
 /* Data */
 typedef struct Data
 {
-    float training_inputs[training][inputs];
+    double training_inputs[training][inputs];
     int training_labels[training];
 
-    float testing_inputs[testing][inputs];
+    double testing_inputs[testing][inputs];
     int testing_labels[testing];
 
 } Data;
@@ -71,35 +71,35 @@ typedef struct Data
 /* Sensor */
 typedef struct Sensor
 {
-    float activation;
+    double activation;
 
 } Sensor;
 
 /* Neuron */
 typedef struct Sensor_Neuron
 {
-    float bias;
-    float weights[inputs];
+    double bias;
+    double weights[inputs];
 
-    float weighted_sum;
-    float activation;
+    double weighted_sum;
+    double activation;
 
-    float bias_error[batch_size];
-    float weights_error[inputs][batch_size];
+    double bias_error[batch_size];
+    double weights_error[inputs][batch_size];
 
 } Sensor_Neuron;
 
 /* Neuron */
 typedef struct Neuron_Neuron
 {
-    float bias;
-    float weights[layer_size];
+    double bias;
+    double weights[layer_size];
 
-    float weighted_sum;
-    float activation;
+    double weighted_sum;
+    double activation;
 
-    float bias_error[batch_size];
-    float weights_error[layer_size][batch_size];
+    double bias_error[batch_size];
+    double weights_error[layer_size][batch_size];
 
 } Neuron_Neuron;
 
@@ -327,29 +327,29 @@ void loadNetworkBin(Neural_Network *net, const char *filename)
     fclose(fp);
 }
 
-float randomizedFloat(float minimum, float maximum)
+double randomizedDouble(double minimum, double maximum)
 /*
- *  This function generates a random float
+ *  This function generates a random double
  *
- *  @param float minimum, float maximum
- *  @return float
+ *  @param double minimum, double maximum
+ *  @return double
  */
 {
-    return (((float)rand()) / (float)(RAND_MAX)) * (maximum - minimum) + minimum;
+    return (((double)rand()) / (double)(RAND_MAX)) * (maximum - minimum) + minimum;
 }
 
-float randomNormalDistribution(float mean, float variation)
+double randomNormalDistribution(double mean, double variation)
 /*
- *  This function generates random distribution of floats within certain mean and variation
+ *  This function generates random distribution of doubles within certain mean and variation
  *
- *  @param float mean, float variation
- *  @return float
+ *  @param double mean, double variation
+ *  @return double
  */
 {
     static int flag = 0;
 
-    float x1, x2, w, y1;
-    static float y2;
+    double x1, x2, w, y1;
+    static double y2;
 
     if (flag)
     {
@@ -360,8 +360,8 @@ float randomNormalDistribution(float mean, float variation)
     {
         do
         {
-            x1 = 2.0 * randomizedFloat(0.0, 1.0) - 1.0;
-            x2 = 2.0 * randomizedFloat(0.0, 1.0) - 1.0;
+            x1 = 2.0 * randomizedDouble(0.0, 1.0) - 1.0;
+            x2 = 2.0 * randomizedDouble(0.0, 1.0) - 1.0;
 
             w = x1 * x1 + x2 * x2;
 
@@ -438,7 +438,7 @@ void shuffle(Data *data)
     // Make randomizer
     srand((unsigned int)time(NULL));
 
-    float tempArray[inputs];
+    double tempArray[inputs];
     int temp, random;
 
     for (int x = 0; x < training - 2; x++)
@@ -487,23 +487,23 @@ void setInput(Neural_Network *net, Data *data, int number, int trainFlag)
     }
 }
 
-float activation(float x)
+double activation(double x)
 /*
  *  The activation function
  *
- *  @param float x
- *  @return float activation
+ *  @param double x
+ *  @return double activation
  */
 {
     return 1.0 / (1.0 + expf(-(x)));
 }
 
-float activationDerivative(float x)
+double activationDerivative(double x)
 /*
  *  The activation derivative function
  *
- *  @param float x
- *  @return float activation
+ *  @param double x
+ *  @return double activation
  */
 {
     return activation(x) * (1.0 - activation(x));
@@ -517,7 +517,7 @@ void feedForward(Neural_Network *net)
  *  @param Neural_Network *net
  */
 {
-    float sum;
+    double sum;
 
     // Calculate first neurons activation
     for (int j = 0; j < layer_size; j++)
@@ -649,7 +649,7 @@ void feedBackward(Neural_Network *net, int x)
         {
             for (int j = 0; j < layer_size; j++)
             {
-                float bias_error = 0.0;
+                double bias_error = 0.0;
 
                 if (l == layers - 1)
                 {
@@ -694,7 +694,7 @@ void feedBackward(Neural_Network *net, int x)
         // Calculate first neurons error
         for (int j = 0; j < layer_size; j++)
         {
-            float bias_error = 0.0;
+            double bias_error = 0.0;
 
             for (int k = 0; k < layer_size; k++)
             {
@@ -716,7 +716,7 @@ void feedBackward(Neural_Network *net, int x)
         // Calculate first neurons error
         for (int j = 0; j < layer_size; j++)
         {
-            float bias_error = 0.0;
+            double bias_error = 0.0;
 
             for (int k = 0; k < outputs; k++)
             {
@@ -834,7 +834,7 @@ void setPrediction(Neural_Network *net)
  *  @param Neural_Network *net
  */
 {
-    float max = net->array_outputs[0].activation;
+    double max = net->array_outputs[0].activation;
 
     int prediction = 0;
 
@@ -876,7 +876,7 @@ void score(Neural_Network *net, Data *data)
         }
     }
 
-    float precision = ((float)correct / (float)testing) * 100;
+    double precision = ((double)correct / (double)testing) * 100;
 
     printf("Neural Network score: %5d / %5d (%5.2f%%)\n", correct, testing, precision);
 }
