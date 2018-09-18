@@ -367,7 +367,7 @@ double randomNormalDistribution(double mean, double variation)
 
         } while (w >= 1.0);
 
-        w = sqrtf((-2.0 * logf(w)) / w);
+        w = sqrt((-2.0 * log(w)) / w);
 
         y1 = x1 * w;
         y2 = x2 * w;
@@ -395,7 +395,7 @@ void randomize(Neural_Network *net)
 
         for (int k = 0; k < inputs; k++)
         {
-            net->array_first[j].weights[k] = randomNormalDistribution(0.0, 1.0) / sqrtf(inputs);
+            net->array_first[j].weights[k] = randomNormalDistribution(0.0, 1.0) / sqrt(inputs);
         }
     }
 
@@ -410,7 +410,7 @@ void randomize(Neural_Network *net)
 
                 for (int k = 0; k < layer_size; k++)
                 {
-                    net->array_hidden[l][j].weights[k] = randomNormalDistribution(0.0, 1.0) / sqrtf(layer_size);
+                    net->array_hidden[l][j].weights[k] = randomNormalDistribution(0.0, 1.0) / sqrt(layer_size);
                 }
             }
         }
@@ -423,7 +423,7 @@ void randomize(Neural_Network *net)
 
         for (int k = 0; k < layer_size; k++)
         {
-            net->array_outputs[j].weights[k] = randomNormalDistribution(0.0, 1.0) / sqrtf(layer_size);
+            net->array_outputs[j].weights[k] = randomNormalDistribution(0.0, 1.0) / sqrt(layer_size);
         }
     }
 }
