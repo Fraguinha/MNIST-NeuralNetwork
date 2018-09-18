@@ -44,7 +44,7 @@
  ************/
 
 #define layer_size 30                          // number of neurons for each layer
-#define layers 1                               // number of hidden layers
+#define layers 0                               // number of hidden layers
 #define layer_size_h (layers ? layer_size : 0) // number of hidden layer neurons
 
 #define batch_size 10                          // number of examples per batch
@@ -495,7 +495,7 @@ double activation(double x)
  *  @return double activation
  */
 {
-    return 1.0 / (1.0 + expf(-(x)));
+    return 1.0 / (1.0 + exp(-(x)));
 }
 
 double activationDerivative(double x)
