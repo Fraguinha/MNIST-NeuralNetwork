@@ -1,4 +1,4 @@
-# MNIST-NeuralNetwor
+# MNIST-NeuralNetwork
 
 Digit recognition Neural Network made in C.
 
