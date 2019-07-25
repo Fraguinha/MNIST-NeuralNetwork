@@ -22,7 +22,7 @@ Each image is 28x28 pixels in size, and contains a black handwritten digit on wh
 
 Each label is a number from 0 to 9 that identifies the digit shown in the image.
 
-### MNIST-NeuralNetwor
+### MNIST-NeuralNetwork
 
 The data was split into 2 groups: 60,000 images for training and 10,000 images for testing.
 
