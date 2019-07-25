@@ -1,4 +1,4 @@
-# Smarty-Pants
+# MNIST-NeuralNetwor
 
 Digit recognition Neural Network made in C.
 
@@ -22,7 +22,7 @@ Each image is 28x28 pixels in size, and contains a black handwritten digit on wh
 
 Each label is a number from 0 to 9 that identifies the digit shown in the image.
 
-### Smarty-Pants
+### MNIST-NeuralNetwor
 
 The data was split into 2 groups: 60,000 images for training and 10,000 images for testing.
 
@@ -60,7 +60,7 @@ A Neural Network is just a sequence of fully connected layers of neurons where, 
 
 When a network makes a prediction, it simply feeds forward the activations of neurons from one layer to the next according to their weights and biases, starting in the input, going layer by layer, until it reaches the final output layer.
 
-### Smarty-Pants
+### MNIST-NeuralNetwor
 
 By default the network builts itself, randomizes its weights and biases and then proceeds to train.
 
@@ -72,13 +72,13 @@ Consists of creating a Neural Network where any neuron of any layer is always fu
 
 Consists of setting the initial weights and biases to sensible, random values. These values will later be adjusted to improve the network performance.
 
-#### Training 
+#### Training
 
 Consists of using an optimization algorithm such as Stochastic Gradient Decent (SGD) in order to minimize the cost function by adjusting the weights and biases of the network.
 
 ##### Cost function
 
-The cost function is a function that rates how good (or bad) the network is doing. for each given training example, it compares the output produced by the network to the output that should have been produced. 
+The cost function is a function that rates how good (or bad) the network is doing. for each given training example, it compares the output produced by the network to the output that should have been produced.
 
 This Cost function gives high outputs when the network is classifying digits poorly and gives lower outputs when the network is classifying digits better.
 
@@ -94,9 +94,9 @@ SGD depends on an algoritm called backpropagation to feed backwards an error thr
 
 There are a couple things you can try using my code
 
-#### Use smarty_pants.bin (trained model) to make predictions on test images
+#### Use net.bin (trained model) to make predictions on test images
 
-1. compile the code: 
+1. compile the code:
 
 ```
 $ gcc neural_network.c -o neural_network.exe -lm
@@ -106,35 +106,35 @@ $ gcc neural_network.c -o neural_network.exe -lm
 
 3. Choose images you'd like to see the network classify.
 
-4. execute the code with the image numbers as parameters: 
+4. execute the code with the image numbers as parameters:
 
 ```
-Ex: $ ./neural_network.exe smarty_pants.bin 1 2 3 4 5 6 7 8 9 10
+Ex: $ ./neural_network.exe net.bin 1 2 3 4 5 6 7 8 9 10
 ```
 
-#### See smarty_pants.bin (trained model) precision over all the 10,000 images
+#### See net.bin (trained model) precision over all the 10,000 images
 
-1. compile the code: 
+1. compile the code:
 
 ```
 $ gcc neural_network.c -o neural_network.exe -lm
 ```
 
-2. execute the code: 
+2. execute the code:
 
 ```
-$ ./neural_network.exe smarty_pants.bin
+$ ./neural_network.exe net.bin
 ```
 
 #### Train your own neural network and test it
 
-1. compile the code: 
+1. compile the code:
 
 ```
 $ gcc neural_network.c -o neural_network.exe -lm
 ```
 
-2. train: execute the code (this will take a long time: ~10min): 
+2. train: execute the code (this will take a long time: ~10min):
 
 ```
 $ ./neural_network.exe
